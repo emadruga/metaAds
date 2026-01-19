@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetAds Intelligence - Competitive Ad Intelligence Platform</title>
+    <meta name="description" content="Discover winning ad strategies from your competitors. Analyze thousands of ads with AI-powered insights.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 2rem;
+            font-weight: 500;
+        }
+
+        .cta-button {
+            background: white;
+            color: #667eea;
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8rem 2rem 6rem;
+            text-align: center;
+            margin-top: 60px;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .hero-cta {
+            background: white;
+            color: #667eea;
+            padding: 1rem 3rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+
+        .hero-cta:hover {
+            transform: scale(1.05);
+        }
+
+        .features {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            padding: 4rem 2rem;
+            margin: 4rem 0;
+        }
+
+        .stats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item p {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .use-cases {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .use-cases h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .use-case-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .use-case-item {
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .use-case-item h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .footer {
+            background: #2d3748;
+            color: white;
+            padding: 3rem 2rem 1rem;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer h4 {
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .footer p, .footer a {
+            color: #cbd5e0;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid #4a5568;
+            color: #cbd5e0;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">MetAds Intelligence</div>
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#use-cases">Use Cases</a>
+                <a href="#about">About</a>
+                <a href="#contact" class="cta-button">Get Started</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h1>Discover Winning Ad Strategies</h1>
+        <p>Analyze thousands of competitor ads with AI-powered intelligence</p>
+        <a href="#contact" class="hero-cta">Start Free Trial</a>
+    </section>
+
+    <section class="stats">
+        <div class="stats-container">
+            <div class="stat-item">
+                <h3>1M+</h3>
+                <p>Ads Analyzed</p>
+            </div>
+            <div class="stat-item">
+                <h3>50+</h3>
+                <p>Countries</p>
+            </div>
+            <div class="stat-item">
+                <h3>24/7</h3>
+                <p>Monitoring</p>
+            </div>
+            <div class="stat-item">
+                <h3>Real-time</h3>
+                <p>Insights</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <h2>Powerful Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3>Advanced Search</h3>
+                <p>Search through millions of ads by keywords, advertisers, countries, and platforms.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Competitor Analysis</h3>
+                <p>Track competitors' ad strategies, creative patterns, and messaging in real-time.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-Powered Insights</h3>
+                <p>Machine learning identifies successful patterns and winning angles.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <h3>Performance Tracking</h3>
+                <p>Identify top-performing ads based on longevity and activity.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💾</div>
+                <h3>Ad Library</h3>
+                <p>Build your swipe file of winning ads for easy reference.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Multi-Platform</h3>
+                <p>Analyze ads across Facebook, Instagram, and Meta platforms.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="use-cases" class="use-cases">
+        <h2>Perfect For</h2>
+        <div class="use-case-list">
+            <div class="use-case-item">
+                <h4>Digital Marketers</h4>
+                <p>Discover competitor ads and optimize your campaigns.</p>
+            </div>
+            <div class="use-case-item">
+                <h4>E-commerce Brands</h4>
+                <p>Find winning product ads and marketing angles.</p>
+            </div>
+            <div class="use-case-item">
+                <h4>Agencies</h4>
+                <p>Provide competitive intelligence reports to clients.</p>
+            </div>
+            <div class="use-case-item">
+                <h4>Media Buyers</h4>
+                <p>Identify proven ad creatives before spending budget.</p>
+            </div>
+            <div class="use-case-item">
+                <h4>Content Creators</h4>
+                <p>Understand messaging that resonates with audiences.</p>
+            </div>
+            <div class="use-case-item">
+                <h4>Market Researchers</h4>
+                <p>Analyze advertising trends across industries.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer id="about" class="footer">
+        <div class="footer-container">
+            <div>
+                <h4>About MetAds Intelligence</h4>
+                <p>A competitive intelligence platform that helps businesses understand market trends and optimize advertising strategies through data-driven insights.</p>
+            </div>
+            <div>
+                <h4>Product</h4>
+                <a href="#features">Features</a>
+                <a href="#use-cases">Use Cases</a>
+                <a href="#">Pricing</a>
+                <a href="#">Documentation</a>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <p><strong>EWD Trein & Consult Ltda.</strong></p>
+                <p>Rio de Janeiro, Brazil</p>
+            </div>
+            <div id="contact">
+                <h4>Contact</h4>
+                <a href="mailto:contact@metads.app">contact@metads.app</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 EWD Trein & Consult Ltda. All rights reserved.</p>
+            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Data sourced from Meta Ad Library API for market research purposes.</p>
+        </div>
+    </footer>
+</body>
+</html>
