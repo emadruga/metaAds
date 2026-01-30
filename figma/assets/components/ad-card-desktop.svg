@@ -1,0 +1,32 @@
+<svg width="334" height="100" viewBox="0 0 334 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Card Background -->
+  <rect width="334" height="100" rx="8" fill="white"/>
+  <rect x="0.5" y="0.5" width="333" height="99" rx="7.5" stroke="#E5E7EB"/>
+
+  <!-- Thumbnail Placeholder -->
+  <rect x="12" y="12" width="60" height="60" rx="8" fill="#F3F4F6"/>
+  <path d="M32 36L42 46L52 36" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="42" cy="30" r="5" stroke="#9CA3AF" stroke-width="2"/>
+
+  <!-- Page Name -->
+  <text x="84" y="28" fill="#111827" font-family="Inter" font-size="14" font-weight="600">Page Name</text>
+
+  <!-- Headline Text -->
+  <text x="84" y="46" fill="#6B7280" font-family="Inter" font-size="12">Turn long videos into viral clips...</text>
+
+  <!-- Meta Row -->
+  <!-- Platform Badges -->
+  <rect x="84" y="56" width="24" height="18" rx="4" fill="#FCE7F3"/>
+  <text x="89" y="69" fill="#E4405F" font-family="Inter" font-size="9" font-weight="600">IG</text>
+
+  <rect x="112" y="56" width="24" height="18" rx="4" fill="#DBEAFE"/>
+  <text x="117" y="69" fill="#1877F2" font-family="Inter" font-size="9" font-weight="600">FB</text>
+
+  <!-- Days Badge -->
+  <rect x="144" y="56" width="52" height="18" rx="4" fill="#EEF2FF"/>
+  <text x="152" y="69" fill="#4338CA" font-family="Inter" font-size="10" font-weight="600">67 days</text>
+
+  <!-- CTA Badge -->
+  <rect x="204" y="56" width="70" height="18" rx="4" fill="#F3F4F6"/>
+  <text x="212" y="69" fill="#6B7280" font-family="Inter" font-size="10">[Learn More]</text>
+</svg>

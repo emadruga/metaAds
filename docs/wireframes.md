@@ -6,6 +6,7 @@
 
 **Key Metrics to Highlight:**
 - Days Active (proxy for ad performance)
+- Related Ads / Variants (shows active A/B testing)
 - Creative Preview (visual-first approach)
 - Page/Advertiser Name
 - Platform Distribution
@@ -47,27 +48,27 @@ Three-column layout with persistent views.
 │  ○ Inactive        │  ┌─────────────────────────┐  │  Days Active: 67                │
 │                    │  │┌───┐                    │  │  Platforms: IG, FB              │
 │  Days Active       │  ││ ◻ │ Captions.ai        │  │  Status: ● Active               │
-│  Min: [7   ]       │  │└───┘ Auto-generate...   │  │                                 │
-│  Max: [    ]       │  │      IG FB · 34 days    │  │  AD COPY                        │
-│                    │  │      [Get Started]      │  │  ─────────────────────────────  │
-│  Date Range        │  └─────────────────────────┘  │  Headline:                      │
-│  [Last 30 days ▼]  │                               │  "Turn long videos into         │
-│                    │  ┌─────────────────────────┐  │   viral clips in one click"     │
+│  Min: [7   ]       │  │└───┘ Auto-generate...   │  │  Related Ads: [4 variants →]    │
+│  Max: [    ]       │  │      IG FB · 34 days    │  │                                 │
+│                    │  │      [Get Started]      │  │  AD COPY                        │
+│  Date Range        │  └─────────────────────────┘  │  ─────────────────────────────  │
+│  [Last 30 days ▼]  │                               │  Headline:                      │
+│                    │  ┌─────────────────────────┐  │  "Turn long videos into         │
+│                    │  │┌───┐                    │  │   viral clips in one click"     │
+│  ┌──────────────┐  │  ││ ◻ │ Kapwing            │  │                                 │
+│  │   SEARCH     │  │  │└───┘ Create content...  │  │  Body:                          │
+│  └──────────────┘  │  │      IG · 28 days       │  │  "Stop spending hours editing.  │
+│                    │  │      [Sign Up]          │  │   OpusClip uses AI to find the  │
+│                    │  └─────────────────────────┘  │   best moments in your long     │
+│                    │                               │   videos and turns them into    │
+│                    │  ┌─────────────────────────┐  │   viral shorts automatically."  │
 │                    │  │┌───┐                    │  │                                 │
-│  ┌──────────────┐  │  ││ ◻ │ Kapwing            │  │  Body:                          │
-│  │   SEARCH     │  │  │└───┘ Create content...  │  │  "Stop spending hours editing.  │
-│  └──────────────┘  │  │      IG · 28 days       │  │   OpusClip uses AI to find the  │
-│                    │  │      [Sign Up]          │  │   best moments in your long     │
-│                    │  └─────────────────────────┘  │   videos and turns them into    │
-│                    │                               │   viral shorts automatically."  │
-│                    │  ┌─────────────────────────┐  │                                 │
-│                    │  │┌───┐                    │  │  CTA: Learn More                │
-│                    │  ││ ◻ │ InVideo            │  │  Link: opus.pro/get-started     │
-│                    │  │└───┘ Make videos in...  │  │                                 │
-│                    │  │      FB · 21 days       │  │  ─────────────────────────────  │
-│                    │  │      [Try Now]          │  │                                 │
-│                    │  └─────────────────────────┘  │  [View on Meta]  [Save]  [Copy] │
-│                    │                               │                                 │
+│                    │  ││ ◻ │ InVideo            │  │  CTA: Learn More                │
+│                    │  │└───┘ Make videos in...  │  │  Link: opus.pro/get-started     │
+│                    │  │      FB · 21 days       │  │                                 │
+│                    │  │      [Try Now]          │  │  ─────────────────────────────  │
+│                    │  └─────────────────────────┘  │                                 │
+│                    │                               │  [View on Meta]  [Save]  [Copy] │
 │                    │  ─────────────────────────    │                                 │
 │                    │  Load more results...         │                                 │
 │                    │                               │                                 │
@@ -113,23 +114,24 @@ Two-column layout with collapsible search.
 │  ││   │ Descript         │  │                                      │
 │  ││ ◻ │ Edit videos...   │  │  ● Active · 67 days · IG, FB         │
 │  │└───┘ IG · 45 days     │  │  Started: Dec 1, 2025                │
-│  └───────────────────────┘  │                                      │
-│                             │  HEADLINE                            │
-│  ┌───────────────────────┐  │  "Turn long videos into viral        │
-│  │┌───┐                  │  │   clips in one click"                │
-│  ││   │ Captions.ai      │  │                                      │
-│  ││ ◻ │ Auto-generate... │  │  BODY                                │
-│  │└───┘ IG FB · 34 days  │  │  "Stop spending hours editing.       │
-│  └───────────────────────┘  │   OpusClip uses AI to find the       │
-│                             │   best moments in your long videos   │
-│  ┌───────────────────────┐  │   and turns them into viral shorts   │
-│  │┌───┐                  │  │   automatically."                    │
-│  ││   │ Kapwing          │  │                                      │
-│  ││ ◻ │ Create content..│  │  CTA: [Learn More]                   │
-│  │└───┘ IG · 28 days     │  │  Link: opus.pro/get-started          │
-│  └───────────────────────┘  │                                      │
-│                             │  ──────────────────────────────────  │
-│  Load more...               │  [View on Meta]  [Save]  [Copy]      │
+│  └───────────────────────┘  │  Related Ads: [4 variants →]         │
+│                             │                                      │
+│  ┌───────────────────────┐  │  HEADLINE                            │
+│  │┌───┐                  │  │  "Turn long videos into viral        │
+│  ││   │ Captions.ai      │  │   clips in one click"                │
+│  ││ ◻ │ Auto-generate... │  │                                      │
+│  │└───┘ IG FB · 34 days  │  │  BODY                                │
+│  └───────────────────────┘  │  "Stop spending hours editing.       │
+│                             │   OpusClip uses AI to find the       │
+│  ┌───────────────────────┐  │   best moments in your long videos   │
+│  │┌───┐                  │  │   and turns them into viral shorts   │
+│  ││   │ Kapwing          │  │   automatically."                    │
+│  ││ ◻ │ Create content..│  │                                      │
+│  │└───┘ IG · 28 days     │  │  CTA: [Learn More]                   │
+│  └───────────────────────┘  │  Link: opus.pro/get-started          │
+│                             │                                      │
+│  Load more...               │  ──────────────────────────────────  │
+│                             │  [View on Meta]  [Save]  [Copy]      │
 │                             │                                      │
 ├─────────────────────────────┴──────────────────────────────────────┤
 │  FOOTER                                                            │
@@ -232,7 +234,7 @@ Single column with bottom tab navigation.
 │  │ │     │  Turn long videos │  │
 │  │ └─────┘  into viral cli...│  │
 │  │                           │  │
-│  │  IG FB    67 days   >     │  │
+│  │  IG FB  67 days  4 var >  │  │
 │  └───────────────────────────┘  │
 │                                 │
 │  ┌───────────────────────────┐  │
@@ -252,7 +254,7 @@ Single column with bottom tab navigation.
 │  │ │     │  Auto-generate    │  │
 │  │ └─────┘  captions and...  │  │
 │  │                           │  │
-│  │  IG FB    34 days    >    │  │
+│  │  IG FB  34 days  2 var >  │  │
 │  └───────────────────────────┘  │
 │                                 │
 │  ┌───────────────────────────┐  │
@@ -296,6 +298,15 @@ Single column with bottom tab navigation.
 │                                 │
 │  Started: December 1, 2025      │
 │                                 │
+│  RELATED ADS                    │
+│  ─────────────────────────────  │
+│  ┌───────────────────────────┐  │
+│  │  [4 variants from this    │  │
+│  │   advertiser →]           │  │
+│  │   Longest: 67 days        │  │
+│  │   Newest: 12 days ago     │  │
+│  └───────────────────────────┘  │
+│                                 │
 │  HEADLINE                       │
 │  ─────────────────────────────  │
 │  "Turn long videos into viral   │
@@ -328,7 +339,63 @@ Single column with bottom tab navigation.
 └─────────────────────────────────┘
 ```
 
-### 3D. Mobile: Saved Ads View (Tab 3)
+### 3D. Mobile: Related Ads View (Slide-in Panel)
+
+```
+┌─────────────────────────────────┐
+│  ←  Related Ads (4)     OpusClip│
+├─────────────────────────────────┤
+│                                 │
+│  VARIANT INSIGHTS               │
+│  ─────────────────────────────  │
+│  Longest running: 67 days       │
+│  All use same CTA: Learn More   │
+│  Headlines differ (A/B test)    │
+│                                 │
+│  ─────────────────────────────  │
+│                                 │
+│  ┌───────────────────────────┐  │
+│  │ ┌─────┐  ★ LONGEST        │  │
+│  │ │     │  ───────────────  │  │
+│  │ │  ◻  │  "Turn long       │  │
+│  │ │     │   videos into..." │  │
+│  │ └─────┘                   │  │
+│  │  67 days · IG FB          │  │
+│  └───────────────────────────┘  │
+│                                 │
+│  ┌───────────────────────────┐  │
+│  │ ┌─────┐                   │  │
+│  │ │     │  ───────────────  │  │
+│  │ │  ◻  │  "Stop wasting    │  │
+│  │ │     │   hours on..."    │  │
+│  │ └─────┘                   │  │
+│  │  45 days · IG FB          │  │
+│  └───────────────────────────┘  │
+│                                 │
+│  ┌───────────────────────────┐  │
+│  │ ┌─────┐  ✦ NEWEST         │  │
+│  │ │     │  ───────────────  │  │
+│  │ │  ◻  │  "AI finds your   │  │
+│  │ │     │   best clips..."  │  │
+│  │ └─────┘                   │  │
+│  │  12 days · IG             │  │
+│  └───────────────────────────┘  │
+│                                 │
+│  ┌───────────────────────────┐  │
+│  │ ┌─────┐                   │  │
+│  │ │     │  ───────────────  │  │
+│  │ │  ◻  │  "Go viral with   │  │
+│  │ │     │   one click..."   │  │
+│  │ └─────┘                   │  │
+│  │  28 days · FB             │  │
+│  └───────────────────────────┘  │
+│                                 │
+├─────────────────────────────────┤
+│  [🔍 Search]  [📋 Results]  [⭐]│
+└─────────────────────────────────┘
+```
+
+### 3E. Mobile: Saved Ads View (Tab 3)
 
 ```
 ┌─────────────────────────────────┐
@@ -454,13 +521,13 @@ PRIMARY ACTIONS     METRICS/BADGES       STATUS INDICATORS
                     light background    │  (gray)         │
                                         └─────────────────┘
 
-PLATFORM ICONS
-┌─────────────────────────────────┐
-│  [IG]  [FB]  [MSG]  [AN]        │
-│                                 │
-│  Each platform gets a subtle    │
-│  icon or abbreviated badge      │
-└─────────────────────────────────┘
+PLATFORM ICONS              VARIANT BADGE
+┌─────────────────────────┐ ┌─────────────────────────────┐
+│  [IG]  [FB]  [MSG]  [AN]│ │  [4 var]                    │
+│                         │ │                             │
+│  Each platform gets a   │ │  Shows number of related    │
+│  subtle icon or badge   │ │  ads/variants found         │
+└─────────────────────────┘ └─────────────────────────────┘
 ```
 
 ### Typography Scale
@@ -472,6 +539,7 @@ Page Name:     16px semibold     Page Name:     15px semibold
 Headline:      14px regular      Headline:      14px regular
 Meta info:     12px regular      Meta info:     12px regular
 Days badge:    14px bold         Days badge:    14px bold
+Variant badge: 12px medium       Variant badge: 12px medium
 
 Section headers: 13px uppercase  Section headers: 12px uppercase
 Body text:       14px regular    Body text:       14px regular
@@ -543,7 +611,110 @@ Body text:       14px regular    Body text:       14px regular
 
 ---
 
-## 7. USER FLOW DIAGRAM
+## 7. RELATED ADS / VARIANTS FEATURE
+
+### 7A. Feature Overview
+
+The Related Ads feature helps users identify A/B testing patterns and find winning ad variations by grouping ads from the same advertiser that are likely part of the same campaign.
+
+### 7B. What This Feature Enables
+
+| Insight | Value for Reverse Engineering |
+|---------|-------------------------------|
+| "This ad has 4 variants" | Shows advertiser is actively testing - serious player |
+| "This is the longest-running variant" | Likely the winner - study this one closely |
+| "Newest variant launched 3 days ago" | They're still iterating - angle is working |
+| "All variants use same CTA" | That CTA is validated across tests |
+| "Headlines differ but body is same" | They're testing hooks, not core message |
+
+### 7C. Implementation Approaches (Complexity vs Value Tradeoff)
+
+| Approach | Implementation Effort | Detection Accuracy | Recommended Phase |
+|----------|----------------------|-------------------|-------------------|
+| **Temporal + Same Advertiser** | Low | Medium | MVP - Phase 1 |
+| Same Page ID + ads launched within 14 days of each other | Simple date comparison | May group unrelated campaigns | Start here |
+| **Add Text Similarity** | Medium | Good | Phase 2 |
+| Above + compare headlines/body text for 70%+ similarity | Requires text processing | Catches true variants | Add after MVP |
+| **Add Visual Similarity** | High | Excellent | Phase 3 (Premium) |
+| Above + perceptual image hashing to detect similar creatives | Requires image processing | Catches creative refreshes | Future feature |
+
+### 7D. Variant Grouping Logic
+
+For a given ad, related ads are identified where:
+
+1. **Same Page ID** (required - must be same advertiser)
+
+   AND at least ONE of:
+
+2. **Launched within 14 days** of each other
+3. **Text similarity score > 70%** (headlines or body)
+4. **Same CTA button** type
+5. **Same landing page URL** domain
+
+### 7E. UI Display Rules
+
+**In Results List (Card):**
+- Show variant count badge only if > 1 variant exists
+- Format: "4 var" (abbreviated for space)
+
+**In Ad Detail Panel:**
+- Show "Related Ads" section with clickable link
+- Display summary: total variants, longest running, newest
+
+**In Related Ads View:**
+- Mark longest-running variant with ★ LONGEST badge
+- Mark most recent variant with ✦ NEWEST badge
+- Show insight summary at top (common CTA, differing elements)
+
+### 7F. Variant Card Component
+
+```
+┌───────────────────────────────────────────────────────┐
+│                                                       │
+│  VARIANT CARD (in Related Ads list)                   │
+│  ───────────────────────────────────────────────────  │
+│                                                       │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │ ┌─────┐  ★ LONGEST (or ✦ NEWEST)               │  │
+│  │ │     │  ─────────────────────────────────────  │  │
+│  │ │  ◻  │  "Headline text preview that may       │  │
+│  │ │     │   wrap to two lines..."                │  │
+│  │ └─────┘                                        │  │
+│  │  45 days · IG FB · Learn More                  │  │
+│  └─────────────────────────────────────────────────┘  │
+│                                                       │
+│  Badge shown only for:                                │
+│  - ★ LONGEST = highest days_active in group          │
+│  - ✦ NEWEST = most recent start_date in group        │
+│                                                       │
+└───────────────────────────────────────────────────────┘
+```
+
+### 7G. Variant Insights Summary
+
+```
+┌───────────────────────────────────────────────────────┐
+│                                                       │
+│  VARIANT INSIGHTS (top of Related Ads view)           │
+│  ───────────────────────────────────────────────────  │
+│                                                       │
+│  Displayed insights (when applicable):                │
+│                                                       │
+│  • "Longest running: 67 days"                         │
+│  • "All use same CTA: Learn More"                     │
+│  • "Headlines differ (A/B testing hooks)"             │
+│  • "Same landing page across variants"                │
+│  • "Testing across IG and FB"                         │
+│                                                       │
+│  These insights help users quickly understand         │
+│  what the advertiser is testing and what's working.   │
+│                                                       │
+└───────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. USER FLOW DIAGRAM
 
 ```
                     ┌─────────────┐
@@ -569,24 +740,39 @@ Body text:       14px regular    Body text:       14px regular
                     │   (View)    │       └──────┬──────┘
                     └──────┬──────┘              │
                            │              Adjust filters
-              ┌────────────┼────────────┐       │
-              │            │            │       │
-              ▼            ▼            ▼       │
-        ┌──────────┐ ┌──────────┐ ┌──────────┐ │
-        │  SAVE    │ │  VIEW    │ │  COPY    │ │
-        │  AD      │ │  ON META │ │  TEXT    │ │
-        └────┬─────┘ └──────────┘ └──────────┘ │
-             │                                  │
-             ▼                                  │
-        ┌──────────┐                           │
-        │  SAVED   │◄──────────────────────────┘
-        │  ADS     │
-        └──────────┘
+          ┌────────────────┼────────────────┐   │
+          │                │                │   │
+          ▼                ▼                ▼   │
+    ┌──────────┐    ┌──────────┐    ┌──────────┐
+    │  VIEW    │    │  SAVE    │    │  COPY    │
+    │ RELATED  │    │  AD      │    │  TEXT    │
+    │  ADS     │    └────┬─────┘    └──────────┘
+    └────┬─────┘         │
+         │               ▼
+         │          ┌──────────┐
+         │          │  SAVED   │◄──────────────┘
+         │          │  ADS     │
+         │          └──────────┘
+         │
+         ▼
+    ┌──────────┐
+    │ RELATED  │
+    │ ADS LIST │
+    │ (Panel)  │
+    └────┬─────┘
+         │
+    Tap a variant
+         │
+         ▼
+    ┌──────────┐
+    │AD DETAIL │
+    │(Variant) │
+    └──────────┘
 ```
 
 ---
 
-## 8. KEY DIFFERENCES FROM BIGSPY
+## 9. KEY DIFFERENCES FROM BIGSPY
 
 | Aspect | BigSpy | MetAds (Our Approach) |
 |--------|--------|----------------------|
@@ -595,22 +781,26 @@ Body text:       14px regular    Body text:       14px regular
 | Filters | Always expanded, many options | Collapsible, focused on key filters |
 | Creative preview | Small thumbnails | Large, prominent previews |
 | Key metric | Multiple metrics competing | "Days Active" as primary signal |
+| Variant detection | Not prominently featured | Core feature with dedicated view |
 | Mobile experience | Desktop-first, cramped on mobile | Mobile-first, native feel |
 | Visual style | Data-table aesthetic | Card-based, modern UI |
 | Cognitive load | High - need to scan everything | Low - clear hierarchy |
 
 ---
 
-## 9. NEXT STEPS
+## 10. NEXT STEPS
 
 1. **Validate with real data** - Mock up with actual Meta Ad Library results
 2. **Test on devices** - Verify touch targets and readability on iPhone
 3. **Define color palette** - Choose primary, secondary, and status colors
 4. **Create component library** - Build reusable UI components
 5. **Prototype interactions** - Add transitions and micro-animations
+6. **Implement variant detection** - Start with temporal + same advertiser approach
+7. **Design variant insights algorithm** - Define rules for insight generation
 
 ---
 
-*Document Version: 1.0*
+*Document Version: 1.1*
 *Created: January 30, 2026*
+*Updated: January 30, 2026 - Added Related Ads/Variants feature*
 *Status: Ideation Phase*

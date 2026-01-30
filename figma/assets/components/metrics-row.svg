@@ -1,0 +1,22 @@
+<svg width="358" height="56" viewBox="0 0 358 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="358" height="56" rx="8" fill="#F9FAFB"/>
+
+  <!-- Dividers -->
+  <line x1="119" y1="8" x2="119" y2="48" stroke="#E5E7EB" stroke-width="1"/>
+  <line x1="239" y1="8" x2="239" y2="48" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- Days Active -->
+  <text x="60" y="26" fill="#111827" font-family="Inter" font-size="16" font-weight="600" text-anchor="middle">67 days</text>
+  <text x="60" y="42" fill="#6B7280" font-family="Inter" font-size="12" text-anchor="middle">active</text>
+
+  <!-- Platforms -->
+  <text x="179" y="26" fill="#111827" font-family="Inter" font-size="16" font-weight="600" text-anchor="middle">IG FB</text>
+  <text x="179" y="42" fill="#6B7280" font-family="Inter" font-size="12" text-anchor="middle">platforms</text>
+
+  <!-- Status -->
+  <g transform="translate(299, 20)">
+    <circle cx="0" cy="4" r="5" fill="#10B981"/>
+  </g>
+  <text x="299" y="42" fill="#6B7280" font-family="Inter" font-size="12" text-anchor="middle">Active</text>
+</svg>

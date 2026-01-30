@@ -1,0 +1,17 @@
+<svg width="358" height="100" viewBox="0 0 358 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="1" y="1" width="356" height="98" rx="7" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="2"/>
+
+  <!-- Section Label -->
+  <text x="16" y="28" fill="#6B7280" font-family="Inter" font-size="11" font-weight="500" letter-spacing="0.05em">RELATED ADS</text>
+
+  <!-- Main Link Text -->
+  <text x="16" y="50" fill="#4F46E5" font-family="Inter" font-size="14" font-weight="500">4 variants from this advertiser</text>
+
+  <!-- Arrow -->
+  <path d="M334 44L340 50L334 56" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Meta Info -->
+  <text x="16" y="72" fill="#6B7280" font-family="Inter" font-size="12">Longest: 67 days</text>
+  <text x="16" y="88" fill="#6B7280" font-family="Inter" font-size="12">Newest: 12 days ago</text>
+</svg>

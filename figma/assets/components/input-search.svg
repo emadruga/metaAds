@@ -1,0 +1,11 @@
+<svg width="320" height="44" viewBox="0 0 320 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Input Background -->
+  <rect x="1" y="1" width="318" height="42" rx="7" fill="white" stroke="#E5E7EB" stroke-width="2"/>
+
+  <!-- Search Icon -->
+  <circle cx="26" cy="22" r="7" stroke="#9CA3AF" stroke-width="2"/>
+  <path d="M31 27L36 32" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Placeholder Text -->
+  <text x="48" y="27" fill="#9CA3AF" font-family="Inter" font-size="14">Search keywords...</text>
+</svg>
