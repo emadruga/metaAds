@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MetAds Intelligence - Competitive Ad Intelligence Platform</title>
     <meta name="description" content="Discover winning ad strategies from your competitors. Analyze thousands of ads with AI-powered insights.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.svg">
+    <link rel="mask-icon" href="favicon.svg" color="#667eea">
     <style>
         * {
             margin: 0;
@@ -39,8 +42,16 @@
         }
 
         .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
             font-size: 1.5rem;
             font-weight: bold;
+        }
+
+        .logo img {
+            width: 40px;
+            height: 40px;
         }
 
         .nav-links a {
@@ -253,7 +264,10 @@
 <body>
     <header class="header">
         <div class="nav-container">
-            <div class="logo">MetAds Intelligence</div>
+            <div class="logo">
+                <img src="logo.svg" alt="MetAds Logo">
+                <span>MetAds Intelligence</span>
+            </div>
             <nav class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#use-cases">Use Cases</a>

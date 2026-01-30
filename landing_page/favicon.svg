@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- White circle background -->
+  <circle cx="16" cy="16" r="15" fill="white" stroke="#667eea" stroke-width="1"/>
+  <!-- Blue "M" in Arial -->
+  <text x="16" y="24" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#667eea" text-anchor="middle">M</text>
+</svg>
