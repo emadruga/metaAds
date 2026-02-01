@@ -44,14 +44,27 @@
 
         <!-- Error message -->
         <div v-if="error" class="error-message">
+          <strong>❌ Collection Failed</strong><br />
           {{ error }}
+        </div>
+
+        <!-- Progress indicator -->
+        <div v-if="collecting" class="progress-message">
+          <div class="progress-spinner-large"></div>
+          <div class="progress-text">
+            <strong>Collecting ads from Meta Ad Library...</strong>
+            <p>Fetching up to {{ limit }} ads for "{{ effectiveKeyword }}"</p>
+            <p class="progress-note">This may take 10-30 seconds.</p>
+          </div>
         </div>
 
         <!-- Success message -->
         <div v-if="result" class="success-message">
+          <div class="success-icon">✅</div>
           <strong>Collection Complete!</strong><br />
-          Collected {{ result.ads_collected }} ads
-          ({{ result.ads_new }} new, {{ result.ads_updated }} updated)
+          Collected <strong>{{ result.ads_collected }}</strong> ads
+          (<strong>{{ result.ads_new }}</strong> new, <strong>{{ result.ads_updated }}</strong> updated)
+          <p v-if="result.message" class="result-detail">{{ result.message }}</p>
         </div>
       </div>
 
@@ -227,12 +240,67 @@ async function startCollection() {
 }
 
 .success-message {
-  padding: var(--spacing-3);
+  padding: var(--spacing-4);
   background-color: var(--color-success-50);
   border: 1px solid var(--color-success-200);
   border-radius: var(--radius-md);
   color: var(--color-success-700);
   font-size: var(--font-size-sm);
+  text-align: center;
+
+  .success-icon {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-2);
+  }
+
+  strong {
+    font-size: var(--font-size-base);
+  }
+
+  .result-detail {
+    margin-top: var(--spacing-2);
+    font-size: var(--font-size-xs);
+    opacity: 0.8;
+  }
+}
+
+.progress-message {
+  padding: var(--spacing-4);
+  background-color: var(--color-primary-50);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-md);
+  text-align: center;
+
+  .progress-spinner-large {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-primary-200);
+    border-top-color: var(--color-primary-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: var(--spacing-3);
+  }
+
+  .progress-text {
+    color: var(--color-primary-700);
+
+    strong {
+      display: block;
+      font-size: var(--font-size-base);
+      margin-bottom: var(--spacing-2);
+    }
+
+    p {
+      margin: var(--spacing-1) 0;
+      font-size: var(--font-size-sm);
+    }
+
+    .progress-note {
+      font-size: var(--font-size-xs);
+      opacity: 0.7;
+    }
+  }
 }
 
 .modal-footer {

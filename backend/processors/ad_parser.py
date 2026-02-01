@@ -79,7 +79,15 @@ class AdParser:
         # Calculate days active
         start = self._parse_date(ad_data.get('ad_delivery_start_time'))
         if start:
-            end = self._parse_date(ad_data.get('ad_delivery_stop_time')) or datetime.now(timezone.utc)
+            end = self._parse_date(ad_data.get('ad_delivery_stop_time'))
+            if not end:
+                # If no end date, ad is still active - use current time (timezone-aware)
+                end = datetime.now(timezone.utc)
+            # Ensure both datetimes are timezone-aware for subtraction
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=timezone.utc)
+            if end.tzinfo is None:
+                end = end.replace(tzinfo=timezone.utc)
             delta = end - start
             parsed['days_active'] = max(0, delta.days)
 
@@ -93,11 +101,15 @@ class AdParser:
         return None
 
     def _parse_date(self, date_str: Optional[str]) -> Optional[datetime]:
-        """Convert ISO string to datetime."""
+        """Convert ISO string to timezone-aware datetime."""
         if not date_str:
             return None
         try:
-            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            # Ensure timezone-aware
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except Exception:
             return None
 

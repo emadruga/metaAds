@@ -23,6 +23,7 @@ export const useAdsStore = defineStore('ads', {
     selectedAd: null,
     selectedAdDetail: null,
     relatedAds: null,
+    relatedAdsData: null,
 
     // Saved ads
     savedAds: [],
@@ -89,10 +90,12 @@ export const useAdsStore = defineStore('ads', {
     async fetchRelatedAds(nicheSlug, adId) {
       try {
         const response = await adApi.related(nicheSlug, adId)
-        this.relatedAds = response.data.data
+        this.relatedAds = response.data.data.related
+        this.relatedAdsData = response.data.data
       } catch (error) {
         console.error('Failed to fetch related ads:', error)
         this.relatedAds = null
+        this.relatedAdsData = null
       }
     },
 
@@ -207,6 +210,7 @@ export const useAdsStore = defineStore('ads', {
       this.selectedAd = null
       this.selectedAdDetail = null
       this.relatedAds = null
+      this.relatedAdsData = null
     },
 
     setFilters(filters) {

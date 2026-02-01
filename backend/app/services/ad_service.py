@@ -133,13 +133,14 @@ class AdService:
         return ad
 
     @staticmethod
-    def create_or_update_ad(niche_id: str, ad_data: dict) -> tuple:
+    def create_or_update_ad(niche_id: str, ad_data: dict, search_keyword: str = None) -> tuple:
         """
         Create a new ad or update existing one.
 
         Args:
             niche_id: UUID of the niche
             ad_data: Dictionary of ad fields from parser
+            search_keyword: Optional keyword used to find this ad
 
         Returns:
             tuple: (Ad instance, is_new: bool)
@@ -180,7 +181,7 @@ class AdService:
             text_length=ad_data.get('text_length', 0),
             has_emoji=ad_data.get('has_emoji', False),
             has_hashtags=ad_data.get('has_hashtags', False),
-            search_keyword=ad_data.get('search_keyword'),
+            search_keyword=search_keyword or ad_data.get('search_keyword'),
             created_at=now_iso8601()
         )
 

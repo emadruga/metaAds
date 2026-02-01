@@ -99,11 +99,22 @@
         />
       </div>
     </div>
+
+    <!-- Related Ads Modal -->
+    <RelatedAdsModal
+      v-if="showRelatedModal"
+      :related="relatedAdsData.related || []"
+      :loading="false"
+      :insights="relatedAdsData.insights"
+      :page-name="adsStore.selectedAd?.page_name"
+      @close="showRelatedModal = false"
+      @select-ad="handleSelectRelatedAd"
+    />
   </div>
 </template>
 
 <script setup>
-  import { ref, onMounted, watch } from 'vue'
+  import { ref, onMounted, watch, computed } from 'vue'
   import { useRoute } from 'vue-router'
   import { useAdsStore } from '@/stores/ads'
   import { useNichesStore } from '@/stores/niches'
@@ -111,6 +122,7 @@
   import AdGrid from '@/components/AdGrid.vue'
   import AdCarousel from '@/components/AdCarousel.vue'
   import AdDetailPanel from '@/components/AdDetailPanel.vue'
+  import RelatedAdsModal from '@/components/RelatedAdsModal.vue'
 
   const route = useRoute()
   const adsStore = useAdsStore()
@@ -118,6 +130,9 @@
 
   const showMobileDetail = ref(false)
   const showMobileFilters = ref(false)
+  const showRelatedModal = ref(false)
+
+  const relatedAdsData = computed(() => adsStore.relatedAdsData || {})
 
   const nicheSlug = () => route.params.nicheSlug
 
@@ -156,8 +171,15 @@
     }
   }
 
-  function handleViewRelated(ad) {
-    adsStore.fetchRelatedAds(nicheSlug(), ad.id)
+  async function handleViewRelated(ad) {
+    await adsStore.fetchRelatedAds(nicheSlug(), ad.id)
+    showRelatedModal.value = true
+  }
+
+  function handleSelectRelatedAd(ad) {
+    adsStore.selectAd(ad)
+    adsStore.fetchAdDetail(nicheSlug(), ad.id)
+    showRelatedModal.value = false
   }
 
   async function handlePageChange(page) {

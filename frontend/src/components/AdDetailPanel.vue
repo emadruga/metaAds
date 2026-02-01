@@ -131,18 +131,26 @@
 
       <!-- Actions -->
       <div class="detail-actions">
-        <button class="btn btn-ghost related-btn" @click="$emit('view-related', ad)">
-          👥 View Related Ads
-          <span v-if="relatedCount > 0" class="related-count">{{ relatedCount }}</span>
+        <button
+          v-if="relatedCount > 0"
+          class="btn btn-ghost related-btn"
+          @click="$emit('view-related', ad)"
+        >
+          👥 View {{ relatedCount }} Related Ad{{ relatedCount !== 1 ? 's' : '' }}
         </button>
         <a
-          v-if="ad.media?.snapshot_url"
-          :href="ad.media.snapshot_url"
+          v-if="ad.snapshot_url"
+          :href="ad.snapshot_url"
           target="_blank"
-          class="btn btn-ghost"
+          class="btn btn-primary"
         >
-          🔍 View on Meta
+          🔍 View Full Ad on Meta
         </a>
+      </div>
+
+      <!-- Note about images -->
+      <div class="meta-note">
+        <small>💡 Tip: Click "View Full Ad on Meta" to see the actual ad creative with images and videos.</small>
       </div>
     </template>
   </div>

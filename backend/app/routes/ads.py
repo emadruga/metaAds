@@ -62,10 +62,10 @@ def search_ads(slug):
     # Platform filter
     platform = request.args.get('platform')
     if platform:
-        # Filter by platform (stored as JSON array)
-        platforms = platform.split(',')
-        for p in platforms:
-            query = query.filter(Ad._platforms.ilike(f'%{p.strip()}%'))
+        # Filter by platform (stored as JSON array string like ["instagram", "facebook"])
+        # Search for the platform name within the JSON array with quotes
+        platform_lower = platform.strip().lower()
+        query = query.filter(Ad._platforms.ilike(f'%"{platform_lower}"%'))
 
     # Country filter
     country = request.args.get('country')
@@ -74,9 +74,18 @@ def search_ads(slug):
         for c in countries:
             query = query.filter(Ad._country_codes.ilike(f'%{c.strip()}%'))
 
-    # Status filter
+    # Status filter - accept both 'status' and 'is_active' parameters
     status = request.args.get('status', 'all')
-    if status == 'active':
+    is_active = request.args.get('is_active')
+
+    # If is_active is explicitly set, use it (from frontend)
+    if is_active is not None and is_active != '':
+        if is_active.lower() == 'true':
+            query = query.filter_by(is_active=True)
+        elif is_active.lower() == 'false':
+            query = query.filter_by(is_active=False)
+    # Otherwise use status parameter
+    elif status == 'active':
         query = query.filter_by(is_active=True)
     elif status == 'inactive':
         query = query.filter_by(is_active=False)
