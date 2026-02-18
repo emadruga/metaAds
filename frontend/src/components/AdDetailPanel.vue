@@ -139,8 +139,8 @@
           👥 View {{ relatedCount }} Related Ad{{ relatedCount !== 1 ? 's' : '' }}
         </button>
         <a
-          v-if="ad.snapshot_url"
-          :href="ad.snapshot_url"
+          v-if="ad.media?.snapshot_url || ad.snapshot_url"
+          :href="ad.media?.snapshot_url || ad.snapshot_url"
           target="_blank"
           class="btn btn-primary"
         >
@@ -148,8 +148,8 @@
         </a>
       </div>
 
-      <!-- Note about images -->
-      <div class="meta-note">
+      <!-- Note about images (only show if button is visible) -->
+      <div v-if="ad.media?.snapshot_url || ad.snapshot_url" class="meta-note">
         <small>💡 Tip: Click "View Full Ad on Meta" to see the actual ad creative with images and videos.</small>
       </div>
     </template>
