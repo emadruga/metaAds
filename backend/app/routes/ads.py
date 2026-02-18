@@ -122,32 +122,78 @@ def search_ads(slug):
     sort_field = request.args.get('sort', 'days_active')
     sort_order = request.args.get('order', 'desc')
 
-    sort_column = getattr(Ad, sort_field, Ad.days_active)
-    if sort_order == 'asc':
-        query = query.order_by(sort_column.asc())
-    else:
-        query = query.order_by(sort_column.desc())
-
-    # Pagination
+    # Pagination params
     page_num = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 20, type=int), 100)
 
-    pagination = query.paginate(
-        page=page_num,
-        per_page=per_page,
-        error_out=False
-    )
+    # Fetch all matching ads (we need to group them first)
+    all_ads = query.all()
+
+    # Group by (page_name + headline)
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for ad in all_ads:
+        group_key = f"{ad.page_name}|{ad.headline or ''}"
+        groups[group_key].append(ad)
+
+    # Convert to list of groups
+    groups_list = list(groups.values())
+
+    # Sort groups based on sort_field
+    if sort_field == 'variants':
+        # Sort by number of variants
+        groups_list.sort(
+            key=lambda group: len(group),
+            reverse=(sort_order == 'desc')
+        )
+    elif sort_field == 'days_active':
+        # Sort by first ad's days_active
+        groups_list.sort(
+            key=lambda group: group[0].days_active or 0,
+            reverse=(sort_order == 'desc')
+        )
+    elif sort_field == 'start_date':
+        # Sort by first ad's start_date
+        groups_list.sort(
+            key=lambda group: group[0].start_date or '',
+            reverse=(sort_order == 'desc')
+        )
+    elif sort_field == 'collected_at':
+        # Sort by first ad's collected_at
+        groups_list.sort(
+            key=lambda group: group[0].collected_at or '',
+            reverse=(sort_order == 'desc')
+        )
+    else:
+        # Default: sort by variants
+        groups_list.sort(
+            key=lambda group: len(group),
+            reverse=(sort_order == 'desc')
+        )
+
+    # Apply pagination to GROUPS (not individual ads)
+    total_groups = len(groups_list)
+    pages = (total_groups + per_page - 1) // per_page if per_page > 0 else 1
+    start_idx = (page_num - 1) * per_page
+    end_idx = start_idx + per_page
+    paginated_groups = groups_list[start_idx:end_idx]
+
+    # Flatten paginated groups to list of ads
+    paginated_ads = []
+    for group in paginated_groups:
+        paginated_ads.extend(group)
 
     return jsonify({
         'success': True,
-        'data': [ad.to_card_dict() for ad in pagination.items],
+        'data': [ad.to_card_dict() for ad in paginated_ads],
         'pagination': {
             'page': page_num,
             'per_page': per_page,
-            'total': pagination.total,
-            'pages': pagination.pages,
-            'has_next': pagination.has_next,
-            'has_prev': pagination.has_prev
+            'total': len(all_ads),  # Total individual ads
+            'total_groups': total_groups,  # Total groups
+            'pages': pages,  # Pages based on groups
+            'has_next': page_num < pages,
+            'has_prev': page_num > 1
         }
     })
 
