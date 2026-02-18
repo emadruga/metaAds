@@ -216,9 +216,19 @@ def get_ad(slug, ad_id):
     if not ad:
         return jsonify({'success': False, 'error': 'Ad not found'}), 404
 
+    # Count variants (same page + same headline)
+    variant_count = Ad.query.filter(
+        Ad.niche_id == niche.niche_id,
+        Ad.page_id == ad.page_id,
+        Ad.headline == ad.headline
+    ).count()
+
+    ad_data = ad.to_dict()
+    ad_data['variant_count'] = variant_count
+
     return jsonify({
         'success': True,
-        'data': ad.to_dict()
+        'data': ad_data
     })
 
 
@@ -244,10 +254,12 @@ def get_related_ads(slug, ad_id):
     if not ad:
         return jsonify({'success': False, 'error': 'Ad not found'}), 404
 
-    # Find ads from the same page
+    # Find ads from the same page but DIFFERENT campaigns (different headlines)
+    # This excludes variants of the current ad (which are handled by variant analysis)
     related = Ad.query.filter(
         Ad.niche_id == niche.niche_id,
         Ad.page_id == ad.page_id,
+        Ad.headline != ad.headline,  # Different campaign
         Ad.id != ad.id
     ).order_by(Ad.start_date.desc()).limit(20).all()
 
@@ -283,6 +295,165 @@ def get_related_ads(slug, ad_id):
             'insights': insights
         }
     })
+
+
+@ads_bp.route('/<ad_id>/variants/analysis', methods=('GET',))
+@require_auth
+def analyze_ad_variants(slug, ad_id):
+    """
+    Analyze differences between ad variants.
+
+    Returns a detailed comparison of all variants with the same page_name + headline,
+    identifying what changes between them (images, body text, CTAs, etc.).
+    """
+    niche = get_niche_or_404(slug)
+    if not niche:
+        return jsonify({'success': False, 'error': 'Niche not found'}), 404
+
+    ad = Ad.query.filter_by(
+        niche_id=niche.niche_id,
+        id=ad_id
+    ).first()
+
+    if not ad:
+        return jsonify({'success': False, 'error': 'Ad not found'}), 404
+
+    # Find all variants (same page_name + headline)
+    variants = Ad.query.filter(
+        Ad.niche_id == niche.niche_id,
+        Ad.page_name == ad.page_name,
+        Ad.headline == ad.headline
+    ).order_by(Ad.start_date.asc()).all()
+
+    if len(variants) <= 1:
+        return jsonify({
+            'success': True,
+            'data': {
+                'total_variants': 1,
+                'differences': [],
+                'variants': [ad.to_dict()]
+            }
+        })
+
+    # Analyze differences
+    differences = _analyze_variant_differences(variants)
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_variants': len(variants),
+            'differences': differences,
+            'variants': [v.to_dict() for v in variants]
+        }
+    })
+
+
+def _analyze_variant_differences(variants):
+    """
+    Analyze what differs between variants.
+
+    Returns a list of difference types found and their frequency.
+    """
+    differences = {
+        'body_text': [],
+        'description': [],
+        'link_caption': [],
+        'cta': [],
+        'platforms': [],
+        'media': []
+    }
+
+    # Extract unique values for each field
+    unique_bodies = set()
+    unique_descriptions = set()
+    unique_captions = set()
+    unique_ctas = set()
+    unique_platforms = set()
+
+    for variant in variants:
+        if variant.body:
+            unique_bodies.add(variant.body)
+        if variant.description:
+            unique_descriptions.add(variant.description)
+        if variant.link_caption:
+            unique_captions.add(variant.link_caption)
+        if variant.cta_detected:
+            unique_ctas.add(variant.cta_detected)
+        if variant.platforms:
+            # Convert list to tuple for hashability
+            platforms_tuple = tuple(variant.platforms) if isinstance(variant.platforms, list) else (variant.platforms,)
+            unique_platforms.add(platforms_tuple)
+
+    # Build difference summary
+    analysis = []
+
+    if len(unique_bodies) > 1:
+        analysis.append({
+            'field': 'body_text',
+            'variations_count': len(unique_bodies),
+            'label': 'Body Text',
+            'description': f'{len(unique_bodies)} different body text versions',
+            'values': list(unique_bodies)[:5]  # Show first 5 examples
+        })
+
+    if len(unique_descriptions) > 1:
+        analysis.append({
+            'field': 'description',
+            'variations_count': len(unique_descriptions),
+            'label': 'Description',
+            'description': f'{len(unique_descriptions)} different descriptions',
+            'values': list(unique_descriptions)[:5]
+        })
+
+    if len(unique_captions) > 1:
+        analysis.append({
+            'field': 'link_caption',
+            'variations_count': len(unique_captions),
+            'label': 'Link Caption',
+            'description': f'{len(unique_captions)} different link captions',
+            'values': list(unique_captions)[:5]
+        })
+
+    if len(unique_ctas) > 1:
+        analysis.append({
+            'field': 'cta',
+            'variations_count': len(unique_ctas),
+            'label': 'Call-to-Action',
+            'description': f'{len(unique_ctas)} different CTAs',
+            'values': list(unique_ctas)
+        })
+
+    if len(unique_platforms) > 1:
+        analysis.append({
+            'field': 'platforms',
+            'variations_count': len(unique_platforms),
+            'label': 'Platforms',
+            'description': f'{len(unique_platforms)} different platform combinations',
+            'values': [', '.join(p) if isinstance(p, tuple) else p for p in unique_platforms]
+        })
+
+    # Check for text length variations
+    body_lengths = [len(v.body or '') for v in variants]
+    if len(set(body_lengths)) > 1:
+        analysis.append({
+            'field': 'body_length',
+            'variations_count': len(set(body_lengths)),
+            'label': 'Body Text Length',
+            'description': f'Text length varies from {min(body_lengths)} to {max(body_lengths)} characters',
+            'values': [f'{l} chars' for l in sorted(set(body_lengths))]
+        })
+
+    # If no major differences found, they might be image/video variations
+    if not analysis:
+        analysis.append({
+            'field': 'media',
+            'variations_count': len(variants),
+            'label': 'Creative Media',
+            'description': f'{len(variants)} variants - likely image/video variations with identical text',
+            'values': []
+        })
+
+    return analysis
 
 
 # Page-related endpoints
