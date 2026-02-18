@@ -342,6 +342,13 @@ def trigger_collection(slug):
         countries = niche.countries or ['US']
         platforms = niche.platforms or ['instagram', 'facebook']
 
+        # Log collection parameters for debugging
+        print(f"[COLLECTION] Niche: {niche.name}")
+        print(f"[COLLECTION] Keyword: {keyword}")
+        print(f"[COLLECTION] Countries: {countries}")
+        print(f"[COLLECTION] Platforms: {platforms}")
+        print(f"[COLLECTION] Limit: {limit}")
+
         raw_ads = api.search_ads(
             search_terms=keyword,
             countries=countries,
