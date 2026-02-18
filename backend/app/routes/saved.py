@@ -85,7 +85,7 @@ def list_saved_ads(slug):
 
     return jsonify({
         'success': True,
-        'data': [ad.to_dict() for ad in pagination.items],
+        'data': [ad.to_card_dict() for ad in pagination.items],
         'tags': sorted(list(all_tags)),
         'pagination': {
             'page': page_num,
