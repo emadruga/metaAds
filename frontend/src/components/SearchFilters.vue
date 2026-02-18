@@ -105,12 +105,10 @@
   )
 
   function applyFilters() {
-    // Remove empty values
-    const cleanFilters = Object.fromEntries(
-      Object.entries(localFilters).filter(([, v]) => v !== '')
-    )
-    emit('update:filters', cleanFilters)
-    emit('apply', cleanFilters)
+    // Keep all filter keys, including empty strings (which means "All")
+    // This ensures that changing a filter to "All" actually clears it
+    emit('update:filters', { ...localFilters })
+    emit('apply', { ...localFilters })
   }
 
   function clearFilters() {

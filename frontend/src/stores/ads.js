@@ -52,11 +52,19 @@ export const useAdsStore = defineStore('ads', {
       this.error = null
 
       try {
+        // Merge filters, ensuring that empty strings override previous values
         const params = { ...this.filters, ...filters }
-        const response = await adApi.search(nicheSlug, params)
+
+        // Remove empty string values before sending to API (empty = no filter)
+        const cleanParams = Object.fromEntries(
+          Object.entries(params).filter(([, v]) => v !== '')
+        )
+
+        const response = await adApi.search(nicheSlug, cleanParams)
 
         this.ads = response.data.data
         this.pagination = response.data.pagination
+        // Store the full params (with empty strings) to maintain UI state
         this.filters = params
       } catch (error) {
         console.error('Failed to search ads:', error)
@@ -224,6 +232,28 @@ export const useAdsStore = defineStore('ads', {
         platform: '',
         sort: 'days_active',
         order: 'desc'
+      }
+    },
+
+    async clearAllAds(nicheSlug) {
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await adApi.clearAll(nicheSlug)
+
+        // Clear local state
+        this.ads = []
+        this.pagination = null
+        this.clearSelectedAd()
+
+        return response.data
+      } catch (error) {
+        console.error('Failed to clear ads:', error)
+        this.error = error.response?.data?.error || error.message
+        throw error
+      } finally {
+        this.loading = false
       }
     }
   }
