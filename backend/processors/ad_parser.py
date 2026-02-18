@@ -31,6 +31,12 @@ class AdParser:
             Dictionary with parsed and enriched ad data
         """
 
+        # Get platforms - try both fields, prefer publisher_platforms
+        platforms = ad_data.get('publisher_platforms') or ad_data.get('platforms', [])
+        if not platforms:
+            # If still empty, log warning and use empty list
+            print(f"[PARSER WARNING] No platforms found for ad {ad_data.get('id')}")
+
         parsed = {
             'ad_id': ad_data.get('id'),
             'page_name': ad_data.get('page_name'),
@@ -38,7 +44,7 @@ class AdParser:
             'start_date': self._parse_date_to_iso(ad_data.get('ad_delivery_start_time')),
             'end_date': self._parse_date_to_iso(ad_data.get('ad_delivery_stop_time')),
             'is_active': ad_data.get('ad_delivery_stop_time') is None,
-            'platforms': ad_data.get('platforms', []),
+            'platforms': platforms if isinstance(platforms, list) else [platforms] if platforms else [],
             'snapshot_url': ad_data.get('ad_snapshot_url'),
 
             # Text fields
@@ -58,8 +64,9 @@ class AdParser:
             'days_active': 0,
         }
 
-        # Combine all text
+        # Combine all text (including page_name for search)
         full_text = ' '.join(filter(None, [
+            parsed['page_name'],
             parsed['body'],
             parsed['headline'],
             parsed['description'],
