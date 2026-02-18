@@ -137,6 +137,8 @@
   const nicheSlug = () => route.params.nicheSlug
 
   async function handleSearch(filters) {
+    // Clear selected ad when starting a new search
+    adsStore.clearSelectedAd()
     await adsStore.searchAds(nicheSlug(), filters)
   }
 
