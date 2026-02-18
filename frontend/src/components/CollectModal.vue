@@ -11,6 +11,11 @@
           Fetch ads from Meta Ad Library for this niche.
         </p>
 
+        <div class="info-note">
+          <strong>ℹ️ Note:</strong> Collection uses this niche's default countries and platforms settings.
+          The country filter shows ads <em>eligible to run</em> in those countries, not necessarily ads in that country's language.
+        </div>
+
         <!-- Keyword selection -->
         <div class="form-group">
           <label class="form-label">Keyword</label>
@@ -200,6 +205,25 @@ async function startCollection() {
 .modal-description {
   color: var(--color-text-secondary);
   margin: 0 0 var(--spacing-4) 0;
+}
+
+.info-note {
+  background-color: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: #1e40af;
+
+  strong {
+    display: block;
+    margin-bottom: var(--spacing-1);
+  }
+
+  em {
+    font-style: italic;
+  }
 }
 
 .form-group {
