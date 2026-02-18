@@ -107,6 +107,8 @@
   })
 
   watch(nicheSlug, () => {
+    // Clear selected ad when switching niches
+    adsStore.clearSelectedAd()
     loadNiche()
   })
 </script>
