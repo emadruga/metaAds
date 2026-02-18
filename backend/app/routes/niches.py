@@ -22,7 +22,7 @@ def list_niches():
     List all niches for the current user.
 
     Returns:
-        List of niches with basic info
+        List of niches with basic info and stats
     """
     user_id = get_current_user_id()
 
@@ -31,9 +31,39 @@ def list_niches():
         is_active=True
     ).order_by(Niche.created_at.desc()).all()
 
+    # Build response with stats for each niche
+    niches_data = []
+    for niche in niches:
+        niche_dict = niche.to_dict()
+
+        # Calculate stats for this niche
+        total_ads = Ad.query.filter_by(niche_id=niche.niche_id).count()
+        active_ads = Ad.query.filter_by(niche_id=niche.niche_id, is_active=True).count()
+        saved_ads = Ad.query.filter_by(niche_id=niche.niche_id, is_saved=True).count()
+        unique_pages = db.session.query(Ad.page_id).filter_by(
+            niche_id=niche.niche_id
+        ).distinct().count()
+
+        # Get last collection run
+        last_run = CollectionRun.query.filter_by(
+            niche_id=niche.niche_id,
+            status='completed'
+        ).order_by(CollectionRun.completed_at.desc()).first()
+
+        # Add stats to niche dict
+        niche_dict['stats'] = {
+            'total_ads': total_ads,
+            'active_ads': active_ads,
+            'saved_ads': saved_ads,
+            'unique_pages': unique_pages,
+            'last_collection': last_run.completed_at if last_run else None
+        }
+
+        niches_data.append(niche_dict)
+
     return jsonify({
         'success': True,
-        'data': [niche.to_dict() for niche in niches],
+        'data': niches_data,
         'count': len(niches)
     })
 
