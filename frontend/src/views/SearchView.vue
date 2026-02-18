@@ -117,6 +117,7 @@
           :ad="adsStore.selectedAdDetail || adsStore.selectedAd"
           :loading="adsStore.detailLoading"
           :related-count="adsStore.relatedAds?.length || 0"
+          :niche-slug="nicheSlug()"
           @toggle-save="handleToggleSave"
           @update-notes="handleUpdateNotes"
           @view-related="handleViewRelated"
@@ -135,6 +136,7 @@
           :ad="adsStore.selectedAdDetail || adsStore.selectedAd"
           :loading="adsStore.detailLoading"
           :related-count="adsStore.relatedAds?.length || 0"
+          :niche-slug="nicheSlug()"
           @toggle-save="handleToggleSave"
           @update-notes="handleUpdateNotes"
           @view-related="handleViewRelated"
@@ -189,7 +191,7 @@
   const showMobileDetail = ref(false)
   const showMobileFilters = ref(false)
   const showRelatedModal = ref(false)
-  const viewMode = ref('cards') // 'cards' or 'table'
+  const viewMode = ref('table') // 'cards' or 'table'
   const filtersCollapsed = ref(false)
   const detailCollapsed = ref(false)
 

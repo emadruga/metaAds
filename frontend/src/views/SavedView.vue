@@ -46,6 +46,8 @@
       <AdDetailPanel
         :ad="adsStore.selectedAdDetail || adsStore.selectedAd"
         :loading="adsStore.detailLoading"
+        :related-count="adsStore.relatedAds?.length || 0"
+        :niche-slug="nicheSlug()"
         @toggle-save="handleToggleSave"
         @update-notes="handleUpdateNotes"
         @view-related="handleViewRelated"

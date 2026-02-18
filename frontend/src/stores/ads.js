@@ -15,7 +15,7 @@ export const useAdsStore = defineStore('ads', {
       q: '',
       is_active: '',
       platform: '',
-      sort: 'days_active',
+      sort: 'variants',
       order: 'desc'
     },
 
