@@ -37,6 +37,7 @@
     <div class="filter-group">
       <label class="filter-label">Sort by</label>
       <select v-model="localFilters.sort" class="filter-select">
+        <option value="variants">Variants (Table view)</option>
         <option value="days_active">Days Active</option>
         <option value="start_date">Start Date</option>
         <option value="collected_at">Recently Added</option>
