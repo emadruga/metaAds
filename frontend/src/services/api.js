@@ -107,7 +107,8 @@ export const nicheApi = {
 export const adApi = {
   search: (slug, params) => api.get(`/niches/${slug}/ads/search`, { params }),
   get: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}`),
-  related: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}/related`)
+  related: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}/related`),
+  clearAll: (slug) => api.delete(`/niches/${slug}/ads/clear`)
 }
 
 export const savedApi = {

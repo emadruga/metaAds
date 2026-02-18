@@ -7,6 +7,15 @@
         <h1 class="niche-name">{{ currentNiche?.name || 'Loading...' }}</h1>
       </div>
       <div class="header-right">
+        <button
+          v-if="adsStore.ads.length > 0"
+          class="btn btn-ghost"
+          @click="handleClearAds"
+          :disabled="clearing"
+          title="Clear all ads from this niche"
+        >
+          {{ clearing ? '🗑️ Clearing...' : '🗑️ Clear All' }}
+        </button>
         <button class="btn btn-primary collect-btn" @click="nichesStore.openCollectModal()">
           📥 Collect Ads
         </button>
@@ -46,7 +55,7 @@
 </template>
 
 <script setup>
-  import { computed, onMounted, watch } from 'vue'
+  import { ref, computed, onMounted, watch } from 'vue'
   import { useRoute } from 'vue-router'
   import { UserButton } from '@clerk/vue'
   import { useNichesStore } from '@/stores/niches'
@@ -58,6 +67,7 @@
   const nichesStore = useNichesStore()
   const adsStore = useAdsStore()
   const isDevMode = devMode
+  const clearing = ref(false)
 
   const nicheSlug = computed(() => route.params.nicheSlug)
   const currentNiche = computed(() => nichesStore.currentNiche)
@@ -72,6 +82,23 @@
     // Refresh the ads list after collection
     if (result.ads_collected > 0) {
       adsStore.searchAds(nicheSlug.value)
+    }
+  }
+
+  async function handleClearAds() {
+    if (!confirm('Are you sure you want to clear all ads from this niche? This cannot be undone.')) {
+      return
+    }
+
+    clearing.value = true
+
+    try {
+      const result = await adsStore.clearAllAds(nicheSlug.value)
+      alert(`✓ Cleared ${result.ads_deleted} ads from this niche`)
+    } catch (error) {
+      alert(`Failed to clear ads: ${error.message}`)
+    } finally {
+      clearing.value = false
     }
   }
 

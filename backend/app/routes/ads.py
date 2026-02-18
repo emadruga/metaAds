@@ -322,3 +322,34 @@ def mark_page_competitor(slug, page_id):
         'success': True,
         'data': niche_page.to_dict()
     })
+
+
+@ads_bp.route('/clear', methods=['DELETE'])
+@require_auth
+def clear_all_ads(slug):
+    """
+    Clear all ads from a niche.
+
+    This permanently deletes all collected ads for this niche.
+    Use this to start fresh with better search terms or when data quality is poor.
+    """
+    niche = get_niche_or_404(slug)
+    if not niche:
+        return jsonify({'success': False, 'error': 'Niche not found'}), 404
+
+    # Count ads before deletion
+    ads_count = Ad.query.filter_by(niche_id=niche.niche_id).count()
+
+    # Delete all ads for this niche
+    Ad.query.filter_by(niche_id=niche.niche_id).delete()
+
+    # Clear niche pages (they'll be recreated on next collection)
+    NichePage.query.filter_by(niche_id=niche.niche_id).delete()
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': f'Cleared {ads_count} ads from niche',
+        'ads_deleted': ads_count
+    })
