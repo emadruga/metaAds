@@ -136,7 +136,7 @@
           class="btn btn-ghost related-btn"
           @click="$emit('view-related', ad)"
         >
-          👥 View {{ relatedCount }} Related Ad{{ relatedCount !== 1 ? 's' : '' }}
+          🎯 View {{ relatedCount }} Other Campaign{{ relatedCount !== 1 ? 's' : '' }}
         </button>
         <a
           v-if="ad.media?.snapshot_url || ad.snapshot_url"
@@ -152,12 +152,20 @@
       <div v-if="ad.media?.snapshot_url || ad.snapshot_url" class="meta-note">
         <small>💡 Tip: Click "View Full Ad on Meta" to see the actual ad creative with images and videos.</small>
       </div>
+
+      <!-- Variant Analysis (show if 5+ variants exist) -->
+      <VariantAnalysis
+        v-if="ad.variant_count >= 5"
+        :niche-slug="nicheSlug"
+        :ad-id="ad.id"
+      />
     </template>
   </div>
 </template>
 
 <script setup>
   import { ref, computed, watch } from 'vue'
+  import VariantAnalysis from './VariantAnalysis.vue'
   import CreativeCarousel from './CreativeCarousel.vue'
 
   const props = defineProps({
@@ -172,6 +180,10 @@
     relatedCount: {
       type: Number,
       default: 0
+    },
+    nicheSlug: {
+      type: String,
+      required: true
     }
   })
 
@@ -510,5 +522,16 @@
     color: white;
     background-color: var(--color-primary-500);
     border-radius: var(--radius-full);
+  }
+
+  .meta-note {
+    padding: var(--spacing-3);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    margin-top: var(--spacing-3);
+    background-color: var(--color-primary-50);
+    border-left: 3px solid var(--color-primary-500);
+    color: var(--color-text-secondary);
   }
 </style>
