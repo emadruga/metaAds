@@ -46,9 +46,9 @@
         </h3>
         <p class="body-text">{{ ad.content?.body || ad.body || 'No body text' }}</p>
 
-        <div class="cta-section" v-if="ad.content?.cta || ad.cta">
-          <span class="cta-label">Call to Action:</span>
-          <span class="cta-value">{{ ad.content?.cta || ad.cta }}</span>
+        <div class="cta-section" v-if="formattedCTA">
+          <span class="cta-label">CTA:</span>
+          <span class="cta-badge">{{ formattedCTA }}</span>
         </div>
 
         <a
@@ -203,12 +203,27 @@
     return creatives.length > 0 || thumbnail
   })
 
+  const formattedCTA = computed(() => {
+    // Force reactivity by accessing ad.id
+    const adId = props.ad?.id
+    if (!adId) return null
+
+    const cta = props.ad?.content?.cta || props.ad?.cta
+    if (!cta) return null
+
+    // Convert to Title Case (handles both "learn more" and "learn_more")
+    return cta
+      .split(/[_\s]+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+  })
+
   watch(
-    () => props.ad,
-    (newAd) => {
-      if (newAd) {
-        notes.value = newAd.saved?.notes || ''
-        tags.value = newAd.saved?.tags || []
+    () => props.ad?.id,
+    (newId) => {
+      if (newId && props.ad) {
+        notes.value = props.ad.saved?.notes || ''
+        tags.value = props.ad.saved?.tags || []
       }
     },
     { immediate: true }
@@ -363,17 +378,22 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-2);
-    margin-bottom: var(--spacing-2);
+    margin-bottom: var(--spacing-3);
 
     .cta-label {
       font-size: var(--font-size-sm);
       color: var(--color-text-secondary);
+      font-weight: 500;
     }
 
-    .cta-value {
+    .cta-badge {
       font-size: var(--font-size-sm);
-      font-weight: 500;
-      color: var(--color-primary-600);
+      font-weight: 600;
+      color: var(--color-success-700);
+      background-color: var(--color-success-50);
+      padding: var(--spacing-1) var(--spacing-2);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-success-200);
     }
   }
 
