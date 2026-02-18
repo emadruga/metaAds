@@ -86,7 +86,10 @@ def require_auth(f):
             return f(*args, **kwargs)
 
         except Exception as e:
-            current_app.logger.error(f'Auth error: {e}')
+            import traceback
+            current_app.logger.error(f'Auth error in {f.__name__}: {e}')
+            current_app.logger.error(f'Args: {args}, Kwargs: {kwargs}')
+            current_app.logger.error(f'Traceback: {traceback.format_exc()}')
             return jsonify({
                 'success': False,
                 'error': 'Authentication failed'
