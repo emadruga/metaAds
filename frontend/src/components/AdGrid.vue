@@ -31,6 +31,14 @@
     <!-- Pagination -->
     <div v-if="pagination && pagination.pages > 1" class="pagination">
       <button
+        class="btn btn-ghost btn-icon"
+        :disabled="pagination.page === 1"
+        @click="$emit('page-change', 1)"
+        title="First page"
+      >
+        ⇤
+      </button>
+      <button
         class="btn btn-ghost"
         :disabled="!pagination.has_prev"
         @click="$emit('page-change', pagination.page - 1)"
@@ -46,6 +54,14 @@
         @click="$emit('page-change', pagination.page + 1)"
       >
         Next →
+      </button>
+      <button
+        class="btn btn-ghost btn-icon"
+        :disabled="pagination.page === pagination.pages"
+        @click="$emit('page-change', pagination.pages)"
+        title="Last page"
+      >
+        ⇥
       </button>
     </div>
   </div>
