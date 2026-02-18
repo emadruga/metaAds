@@ -103,6 +103,8 @@
   }
 
   onMounted(() => {
+    // Clear selected ad when mounting (prevents leaking from other niches/tabs)
+    adsStore.clearSelectedAd()
     adsStore.fetchSavedAds(nicheSlug())
   })
 
