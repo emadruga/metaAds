@@ -1,0 +1,76 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║              MetaAds Feasibility Test - Instance Information         ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🚀 DEPLOYMENT STATUS: ✅ SUCCESSFUL
+
+📋 INSTANCE DETAILS:
+├─ Instance ID:   i-0ea46312376470c6a
+├─ Public IP:     3.230.145.86
+├─ Instance Type: t3.micro
+├─ Region:        us-east-1
+├─ Status:        running
+└─ Deployed:      2026-02-21
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔑 CONNECTION COMMANDS:
+
+SSH Access:
+ssh -i ~/.ssh/metaads-test.pem ec2-user@3.230.145.86
+
+Copy .env file:
+scp -i ~/.ssh/metaads-test.pem .env ec2-user@3.230.145.86:~/metaAds/
+
+Check setup status:
+ssh -i ~/.ssh/metaads-test.pem ec2-user@3.230.145.86 "cat ~/setup_complete.txt"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏰ SETUP TIMELINE:
+
+Setup started automatically via user_data.sh
+Wait 5-10 minutes for completion before testing
+
+Current time: $(date)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 QUICK REFERENCE:
+
+• View setup logs:
+  ssh -i ~/.ssh/metaads-test.pem ec2-user@3.230.145.86 "sudo cat /var/log/user-data.log"
+
+• AWS Console:
+  https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Instances:instanceId=i-0ea46312376470c6a
+
+• Get Terraform outputs:
+  cd aws_feasibility/terraform && terraform output
+
+• Destroy when done:
+  cd aws_feasibility/terraform && terraform destroy
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️  IMPORTANT NOTES:
+
+1. IAM features disabled (AWS Academy account restrictions)
+2. CloudWatch Agent won't work - use local logs instead
+3. Setup takes 5-10 minutes - be patient!
+4. Don't forget to copy .env file before testing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ TESTING CHECKLIST:
+
+□ Wait 10 minutes for setup
+□ Verify setup complete
+□ Copy .env file
+□ SSH into instance
+□ Activate venv
+□ Run test_api.py
+□ Run example_usage.py
+□ Document results
+□ Destroy resources when done
+
+╚══════════════════════════════════════════════════════════════════════╝
