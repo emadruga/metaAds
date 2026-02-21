@@ -7,7 +7,9 @@
 # Duration: ~5-10 minutes
 # ============================================================================
 
-set -e  # Exit on any error
+# Don't exit on error - continue even if some steps fail
+# set -e  # Disabled to handle package conflicts gracefully
+set -o pipefail  # Catch errors in pipes
 
 # ============================================================================
 # Configuration
@@ -33,13 +35,15 @@ echo "==========================================================================
 # System Update
 # ============================================================================
 echo "[Step 1/10] Updating system packages..."
-dnf update -y
+# Use --skip-broken to avoid curl package conflicts
+dnf update -y --skip-broken || echo "Warning: Some packages skipped due to conflicts"
 
 # ============================================================================
 # Install System Dependencies
 # ============================================================================
 echo "[Step 2/10] Installing system dependencies..."
-dnf install -y \
+# Install packages individually to avoid conflicts, skip problematic ones
+dnf install -y --skip-broken \
     python3.12 \
     python3.12-pip \
     python3.12-devel \
@@ -51,12 +55,46 @@ dnf install -y \
     libffi-devel \
     zlib-devel \
     wget \
-    curl \
     htop \
     vim
 
+# curl is usually pre-installed, verify it exists
+if ! command -v curl &> /dev/null; then
+    echo "Warning: curl not found, attempting to install..."
+    dnf install -y curl || echo "Could not install curl, but this is non-critical"
+fi
+
+# Verify critical packages are installed
+echo "Verifying critical packages..."
+CRITICAL_MISSING=0
+
+if ! command -v python3.12 &> /dev/null; then
+    echo "ERROR: Python 3.12 not installed!"
+    CRITICAL_MISSING=1
+fi
+
+if ! command -v git &> /dev/null; then
+    echo "ERROR: Git not installed!"
+    CRITICAL_MISSING=1
+fi
+
+if [ $CRITICAL_MISSING -eq 1 ]; then
+    echo "CRITICAL: Required packages missing. Attempting alternative installation..."
+    # Try one more time with different approach
+    dnf install -y python3.12 git || {
+        echo "FATAL: Cannot install critical packages. Setup will fail."
+        exit 1
+    }
+fi
+
+echo "✓ All critical packages verified"
+
 # Set Python 3.12 as default
-alternatives --set python3 /usr/bin/python3.12 || true
+alternatives --set python3 /usr/bin/python3.12 || {
+    echo "Warning: Could not set Python 3.12 as default"
+    # Create symlink as fallback
+    ln -sf /usr/bin/python3.12 /usr/local/bin/python3 || true
+}
 
 # ============================================================================
 # Create Application Directory
@@ -74,10 +112,23 @@ su - ec2-user -c "
     if [ -d '$APP_DIR/.git' ]; then
         echo 'Repository already exists, pulling latest changes...'
         cd $APP_DIR
-        git pull origin $GITHUB_BRANCH
+        git pull origin $GITHUB_BRANCH || echo 'Warning: Could not pull latest changes'
     else
         echo 'Cloning repository...'
-        git clone -b $GITHUB_BRANCH $GITHUB_REPO $APP_DIR
+        # Try up to 3 times with increasing delays
+        for i in 1 2 3; do
+            if git clone -b $GITHUB_BRANCH $GITHUB_REPO $APP_DIR; then
+                echo 'Repository cloned successfully'
+                break
+            else
+                echo \"Attempt \$i failed, retrying in \$((i*5)) seconds...\"
+                sleep \$((i*5))
+                if [ \$i -eq 3 ]; then
+                    echo 'FATAL: Could not clone repository after 3 attempts'
+                    exit 1
+                fi
+            fi
+        done
     fi
 "
 
@@ -100,10 +151,27 @@ su - ec2-user -c "
     cd $APP_DIR
     source venv/bin/activate
     if [ -f requirements.txt ]; then
-        pip install -r requirements.txt
+        echo 'Installing Python packages from requirements.txt...'
+        # Install with retries and skip broken packages
+        pip install -r requirements.txt --no-cache-dir || {
+            echo 'Warning: Some packages failed to install, trying individually...'
+            # Try installing critical packages individually
+            pip install requests pandas sqlalchemy python-dotenv || {
+                echo 'ERROR: Could not install critical Python packages'
+                exit 1
+            }
+            echo 'Critical packages installed, continuing...'
+        }
     else
-        echo 'WARNING: requirements.txt not found'
+        echo 'WARNING: requirements.txt not found, installing core packages...'
+        pip install requests pandas sqlalchemy python-dotenv
     fi
+
+    # Verify critical packages
+    python -c 'import requests, pandas, sqlalchemy' && echo '✓ Core packages verified' || {
+        echo 'ERROR: Core Python packages not available'
+        exit 1
+    }
 "
 
 # ============================================================================
@@ -253,10 +321,60 @@ echo "MetaAds Instance Setup Complete!"
 echo "Completed at: $(date)"
 echo "============================================================================"
 echo ""
+
+# Verify setup success
+SETUP_SUCCESS=1
+
+# Check Python
+if ! python3 --version &> /dev/null; then
+    echo "⚠ WARNING: Python not properly configured"
+    SETUP_SUCCESS=0
+else
+    echo "✓ Python: $(python3 --version)"
+fi
+
+# Check Git
+if ! git --version &> /dev/null; then
+    echo "⚠ WARNING: Git not properly configured"
+    SETUP_SUCCESS=0
+else
+    echo "✓ Git: $(git --version)"
+fi
+
+# Check application directory
+if [ -d "$APP_DIR" ]; then
+    echo "✓ Application directory: $APP_DIR"
+else
+    echo "⚠ WARNING: Application directory not found"
+    SETUP_SUCCESS=0
+fi
+
+# Check virtual environment
+if [ -d "$APP_DIR/venv" ]; then
+    echo "✓ Virtual environment: $APP_DIR/venv"
+else
+    echo "⚠ WARNING: Virtual environment not created"
+    SETUP_SUCCESS=0
+fi
+
+# Check feasibility script
+if [ -f "$APP_DIR/final_feasibility.py" ]; then
+    echo "✓ Feasibility test script: Ready"
+else
+    echo "⚠ WARNING: Feasibility test script not found (may need manual copy)"
+fi
+
+echo ""
 echo "Setup marker created at: $SETUP_MARKER"
 echo "Full log available at: $LOG_FILE"
 echo ""
-echo "Instance is ready for testing!"
-echo "============================================================================"
 
-exit 0
+if [ $SETUP_SUCCESS -eq 1 ]; then
+    echo "✅ Instance is ready for testing!"
+    echo "============================================================================"
+    exit 0
+else
+    echo "⚠️  Setup completed with warnings. Check log for details."
+    echo "============================================================================"
+    exit 0  # Don't fail completely, allow manual fixes
+fi
