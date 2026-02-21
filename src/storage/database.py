@@ -72,10 +72,11 @@ class AdDatabase:
             existing = self.session.query(Ad).filter_by(ad_id=row['ad_id']).first()
 
             if existing:
-                # Atualizar se mudou status
-                if row.get('is_active') != existing.is_active:
-                    existing.is_active = row['is_active']
-                    existing.end_date = row.get('end_date')
+                # Atualizar campos que podem mudar
+                existing.is_active = row['is_active']
+                existing.end_date = row.get('end_date')
+                existing.days_active = row.get('days_active')
+                existing.collected_at = datetime.now()
             else:
                 # Criar novo
                 ad = Ad(**row.to_dict())
