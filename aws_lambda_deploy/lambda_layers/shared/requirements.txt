@@ -1,0 +1,15 @@
+# Lambda Layer Dependencies for MetaAds
+# These are installed into the shared layer that all Lambda functions use
+
+# AWS SDK (already included in Lambda runtime, but pinned for local testing)
+boto3>=1.28.0
+
+# JWT verification for Clerk authentication
+PyJWT>=2.8.0
+cryptography>=41.0.0
+
+# Webhook signature verification (Clerk webhooks)
+svix>=1.17.0
+
+# HTTP client for Meta API calls
+requests>=2.31.0
