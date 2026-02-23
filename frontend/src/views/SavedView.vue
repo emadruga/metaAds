@@ -32,7 +32,7 @@
       <AdGrid
         :ads="filteredAds"
         :loading="adsStore.savedLoading"
-        :selected-ad-id="adsStore.selectedAd?.id"
+        :selected-ad-id="adsStore.selectedAd?.meta_ad_id"
         :pagination="adsStore.savedPagination"
         empty-message="No saved ads yet. Save ads from the Search tab to build your collection."
         @select="handleSelectAd"
@@ -79,7 +79,7 @@
 
   async function handleSelectAd(ad) {
     adsStore.selectAd(ad)
-    await adsStore.fetchAdDetail(nicheSlug(), ad.id)
+    await adsStore.fetchAdDetail(nicheSlug(), ad.meta_ad_id)
   }
 
   async function handleToggleSave(ad) {
@@ -90,14 +90,14 @@
 
   async function handleUpdateNotes({ notes, tags }) {
     if (adsStore.selectedAd) {
-      await adsStore.updateSavedAd(nicheSlug(), adsStore.selectedAd.id, { notes, tags })
+      await adsStore.updateSavedAd(nicheSlug(), adsStore.selectedAd.meta_ad_id, { notes, tags })
       // Refresh saved ads list to update tags
       await adsStore.fetchSavedAds(nicheSlug())
     }
   }
 
   function handleViewRelated(ad) {
-    adsStore.fetchRelatedAds(nicheSlug(), ad.id)
+    adsStore.fetchRelatedAds(nicheSlug(), ad.meta_ad_id)
   }
 
   async function handlePageChange(page) {

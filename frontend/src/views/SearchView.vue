@@ -45,7 +45,7 @@
           </button>
         </div>
         <span class="results-count" v-if="adsStore.pagination">
-          {{ adsStore.pagination.total }} ads found
+          {{ adsStore.pagination.total_ads }} ads found
         </span>
         <!-- Mobile filter toggle -->
         <button class="mobile-filter-btn" @click="showMobileFilters = true">
@@ -59,7 +59,7 @@
           v-if="viewMode === 'cards'"
           :ads="adsStore.ads"
           :loading="adsStore.loading"
-          :selected-ad-id="adsStore.selectedAd?.id"
+          :selected-ad-id="adsStore.selectedAd?.meta_ad_id"
           :pagination="adsStore.pagination"
           :show-collect-button="true"
           empty-message="No ads found. Try adjusting your search filters or run a collection."
@@ -72,7 +72,7 @@
           v-else
           :ads="adsStore.ads"
           :loading="adsStore.loading"
-          :selected-ad-id="adsStore.selectedAd?.id"
+          :selected-ad-id="adsStore.selectedAd?.meta_ad_id"
           :pagination="adsStore.pagination"
           :show-collect-button="true"
           :sort-by="adsStore.filters.sort"
@@ -90,7 +90,7 @@
         <AdCarousel
           :ads="adsStore.ads"
           :loading="adsStore.loading"
-          :selected-ad-id="adsStore.selectedAd?.id"
+          :selected-ad-id="adsStore.selectedAd?.meta_ad_id"
           :show-collect-button="true"
           empty-message="No ads found. Tap 'Filters' to adjust or collect new ads."
           @select="handleMobileSelectAd"
@@ -207,7 +207,7 @@
 
   async function handleSelectAd(ad) {
     adsStore.selectAd(ad)
-    await adsStore.fetchAdDetail(nicheSlug(), ad.id)
+    await adsStore.fetchAdDetail(nicheSlug(), ad.meta_ad_id)
     // Auto-expand detail panel when ad is selected
     detailCollapsed.value = false
   }
@@ -234,12 +234,12 @@
 
   async function handleUpdateNotes({ notes, tags }) {
     if (adsStore.selectedAd) {
-      await adsStore.updateSavedAd(nicheSlug(), adsStore.selectedAd.id, { notes, tags })
+      await adsStore.updateSavedAd(nicheSlug(), adsStore.selectedAd.meta_ad_id, { notes, tags })
     }
   }
 
   async function handleViewRelated(ad) {
-    await adsStore.fetchRelatedAds(nicheSlug(), ad.id)
+    await adsStore.fetchRelatedAds(nicheSlug(), ad.meta_ad_id)
     showRelatedModal.value = true
   }
 

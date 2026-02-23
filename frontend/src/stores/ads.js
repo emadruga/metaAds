@@ -131,10 +131,10 @@ export const useAdsStore = defineStore('ads', {
         const updatedAd = response.data.data
 
         // Update in ads list
-        this.updateAdInList(adId, { is_saved: true, saved: updatedAd.saved })
+        this.updateAdInList(adId, { is_saved: true })
 
         // Update selected ad if it's the same
-        if (this.selectedAd?.id === adId) {
+        if (this.selectedAd?.meta_ad_id === adId) {
           this.selectedAd = updatedAd
           this.selectedAdDetail = updatedAd
         }
@@ -151,18 +151,16 @@ export const useAdsStore = defineStore('ads', {
         await savedApi.unsave(nicheSlug, adId)
 
         // Update in ads list
-        this.updateAdInList(adId, { is_saved: false, saved: null })
+        this.updateAdInList(adId, { is_saved: false })
 
         // Remove from saved ads list
-        this.savedAds = this.savedAds.filter((a) => a.id !== adId)
+        this.savedAds = this.savedAds.filter((a) => a.meta_ad_id !== adId)
 
         // Update selected ad if it's the same
-        if (this.selectedAd?.id === adId) {
+        if (this.selectedAd?.meta_ad_id === adId) {
           this.selectedAd.is_saved = false
-          this.selectedAd.saved = null
           if (this.selectedAdDetail) {
             this.selectedAdDetail.is_saved = false
-            this.selectedAdDetail.saved = null
           }
         }
       } catch (error) {
@@ -177,13 +175,13 @@ export const useAdsStore = defineStore('ads', {
         const updatedAd = response.data.data
 
         // Update in saved ads list
-        const index = this.savedAds.findIndex((a) => a.id === adId)
+        const index = this.savedAds.findIndex((a) => a.meta_ad_id === adId)
         if (index !== -1) {
           this.savedAds[index] = updatedAd
         }
 
         // Update selected ad if it's the same
-        if (this.selectedAd?.id === adId) {
+        if (this.selectedAd?.meta_ad_id === adId) {
           this.selectedAd = updatedAd
           this.selectedAdDetail = updatedAd
         }
@@ -196,17 +194,22 @@ export const useAdsStore = defineStore('ads', {
     },
 
     async toggleSave(nicheSlug, ad) {
+      const metaAdId = ad.meta_ad_id
       if (ad.is_saved) {
-        await this.unsaveAd(nicheSlug, ad.id)
+        await this.unsaveAd(nicheSlug, metaAdId)
       } else {
-        await this.saveAd(nicheSlug, ad.id)
+        await this.saveAd(nicheSlug, metaAdId)
       }
     },
 
-    updateAdInList(adId, updates) {
-      const index = this.ads.findIndex((a) => a.id === adId)
-      if (index !== -1) {
-        this.ads[index] = { ...this.ads[index], ...updates }
+    updateAdInList(metaAdId, updates) {
+      // this.ads holds variant groups; update the matching ad inside each group
+      for (const group of this.ads) {
+        if (!group.ads) continue
+        const idx = group.ads.findIndex((a) => a.meta_ad_id === metaAdId)
+        if (idx !== -1) {
+          group.ads[idx] = { ...group.ads[idx], ...updates }
+        }
       }
     },
 

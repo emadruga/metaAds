@@ -16,13 +16,15 @@
       </button>
     </div>
 
-    <!-- Ad grid -->
+    <!-- Ad grid: one card per item.
+         Items may be variant groups { variant_key, ads: [...] }
+         or flat ad objects (e.g. from Saved view). -->
     <div v-else class="ad-grid">
       <AdCard
-        v-for="ad in ads"
-        :key="ad.id"
-        :ad="ad"
-        :is-selected="selectedAdId === ad.id"
+        v-for="item in ads"
+        :key="item.variant_key || item.ads?.[0]?.meta_ad_id || item.meta_ad_id"
+        :ad="item.ads ? item.ads[0] : item"
+        :is-selected="selectedAdId === (item.ads ? item.ads[0]?.meta_ad_id : item.meta_ad_id)"
         @select="$emit('select', $event)"
         @toggle-save="$emit('toggle-save', $event)"
       />

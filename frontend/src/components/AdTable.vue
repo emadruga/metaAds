@@ -210,56 +210,17 @@
 
   const expandedGroups = ref(new Set())
 
-  // Group ads by title (page_name + headline)
+  // Normalise ads from the backend into display groups.
+  // The backend returns pre-grouped objects:
+  //   { variant_key, page_name, headline, count, days_active, ads: [...card_dicts] }
+  // Each object is already one row — just rename fields for the template.
   const groupedAds = computed(() => {
-    const groups = {}
-
-    props.ads.forEach(ad => {
-      const groupKey = `${ad.page_name}|${ad.headline || ''}`
-
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          key: groupKey,
-          pageName: ad.page_name,
-          headline: ad.headline,
-          ads: []
-        }
-      }
-
-      groups[groupKey].ads.push(ad)
-    })
-
-    // Convert to array
-    const groupsArray = Object.values(groups)
-
-    // Sort based on sortBy and sortOrder
-    return groupsArray.sort((a, b) => {
-      let compareValue = 0
-
-      switch (props.sortBy) {
-        case 'variants':
-          compareValue = b.ads.length - a.ads.length
-          break
-        case 'days_active':
-          compareValue = (b.ads[0].days_active || 0) - (a.ads[0].days_active || 0)
-          break
-        case 'start_date':
-          const dateA = new Date(a.ads[0].start_date || 0)
-          const dateB = new Date(b.ads[0].start_date || 0)
-          compareValue = dateB - dateA
-          break
-        case 'collected_at':
-          const collectedA = new Date(a.ads[0].collected_at || 0)
-          const collectedB = new Date(b.ads[0].collected_at || 0)
-          compareValue = collectedB - collectedA
-          break
-        default:
-          compareValue = b.ads.length - a.ads.length
-      }
-
-      // Reverse if ascending order
-      return props.sortOrder === 'asc' ? -compareValue : compareValue
-    })
+    return props.ads.map(item => ({
+      key: item.variant_key || `${item.page_name}|${item.headline || ''}`,
+      pageName: item.page_name,
+      headline: item.headline,
+      ads: item.ads || []
+    }))
   })
 
   function toggleGroup(groupKey) {
