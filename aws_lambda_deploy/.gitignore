@@ -1,0 +1,7 @@
+lambda_stubs/*
+
+# Note: dev.tfvars is committed (no secrets in it)
+# prod.tfvars should NOT be committed if it contains secrets
+
+# OS
+.DS_Store
