@@ -452,10 +452,12 @@ class AdRepo:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def clear_all(niche_id: str) -> int:
+    def clear_all(niche_id: str, include_saved: bool = False) -> int:
         """
-        Delete all non-saved AD# items for a niche.
-        Saved ads are preserved.
+        Delete AD# items for a niche.
+
+        When include_saved=False (default), saved ads are preserved.
+        When include_saved=True, all ads including saved ones are deleted.
 
         Returns number of deleted items.
         """
@@ -478,7 +480,7 @@ class AdRepo:
             query_kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
 
         # 2. Delete in batches of 25 (DynamoDB batch_write_item limit)
-        to_delete = [i for i in items if not i.get("is_saved")]
+        to_delete = items if include_saved else [i for i in items if not i.get("is_saved")]
         deleted = 0
 
         for i in range(0, len(to_delete), 25):

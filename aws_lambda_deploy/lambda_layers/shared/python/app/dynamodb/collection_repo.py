@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 
 from app.dynamodb.client import get_table
 from app.dynamodb.models import CollectionRun
@@ -41,7 +41,7 @@ class CollectionRepo:
                 Key("PK").eq(CollectionRun.pk(niche_id)) &
                 Key("SK").begins_with("RUN#")
             ),
-            FilterExpression=Key("id").eq(run_id),
+            FilterExpression=Attr("id").eq(run_id),
         )
         items = resp.get("Items", [])
         return CollectionRun.from_item(items[0]) if items else None
