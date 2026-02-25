@@ -41,10 +41,15 @@
           <label class="form-label">Max Ads to Collect</label>
           <select v-model="limit" class="form-select">
             <option :value="25">25 ads</option>
-            <option :value="50">50 ads</option>
+            <option :value="50">50 ads (recommended)</option>
             <option :value="100">100 ads</option>
-            <option :value="200">200 ads</option>
           </select>
+          <p v-if="isBroadKeyword" class="form-help warning">
+            ⚠️ "<strong>{{ effectiveKeyword }}</strong>" is a broad keyword. Limit auto-set to {{ recommendedLimit }} ads for reliability.
+          </p>
+          <p v-else class="form-help">
+            💡 Meta API works best with limits ≤ 50 ads. Higher limits may fail intermittently.
+          </p>
         </div>
 
         <!-- Error message -->
@@ -67,9 +72,9 @@
         <div v-if="result" class="success-message">
           <div class="success-icon">✅</div>
           <strong>Collection Complete!</strong><br />
-          Collected <strong>{{ result.ads_collected }}</strong> ads
+          Found <strong>{{ result.ads_found }}</strong> ads
           (<strong>{{ result.ads_new }}</strong> new, <strong>{{ result.ads_updated }}</strong> updated)
-          <p v-if="result.message" class="result-detail">{{ result.message }}</p>
+          <p v-if="result.error_message" class="result-detail">⚠️ {{ result.error_message }}</p>
         </div>
       </div>
 
@@ -92,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted, watch } from 'vue'
 import { nicheApi } from '@/services/api'
 
 const props = defineProps({
@@ -115,12 +120,92 @@ const collecting = ref(false)
 const error = ref(null)
 const result = ref(null)
 
+let pollTimer = null
+
 const effectiveKeyword = computed(() => {
   if (selectedKeyword.value === '_custom') {
     return customKeyword.value.trim()
   }
   return selectedKeyword.value
 })
+
+// Detect if keyword is too broad
+const isBroadKeyword = computed(() => {
+  const kw = effectiveKeyword.value.toLowerCase().trim()
+  if (!kw) return false
+
+  const wordCount = kw.split(/\s+/).length
+
+  // Single-word keywords under 10 chars are considered broad
+  if (wordCount === 1 && kw.length < 10) {
+    return true
+  }
+
+  return false
+})
+
+// Smart limit recommendation based on keyword characteristics
+const recommendedLimit = computed(() => {
+  const kw = effectiveKeyword.value.toLowerCase().trim()
+
+  if (!kw) return 50
+
+  // Very broad single-word keywords → conservative limit
+  const wordCount = kw.split(/\s+/).length
+  if (wordCount === 1 && kw.length < 10) {
+    return 25
+  }
+
+  // Multi-word but still potentially broad (2 words, < 15 chars)
+  if (wordCount === 2 && kw.length < 15) {
+    return 50
+  }
+
+  // Default safe limit for all keywords (Meta API unreliable above 50)
+  return 50
+})
+
+// Auto-adjust limit when keyword changes
+watch(effectiveKeyword, (newKw) => {
+  if (newKw && !collecting.value && !result.value) {
+    limit.value = recommendedLimit.value
+  }
+})
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+onUnmounted(stopPolling)
+
+async function pollRunStatus(runId) {
+  const MAX_POLLS = 60  // 60 × 3s = 3 minutes max
+  let polls = 0
+
+  return new Promise((resolve, reject) => {
+    pollTimer = setInterval(async () => {
+      polls++
+      try {
+        const statusResp = await nicheApi.collectStatus(props.nicheSlug, runId)
+        const run = statusResp.data.data
+
+        if (run.status === 'completed' || run.status === 'error') {
+          stopPolling()
+          resolve(run)
+        } else if (polls >= MAX_POLLS) {
+          stopPolling()
+          reject(new Error('Collection timed out after 3 minutes'))
+        }
+      } catch (err) {
+        stopPolling()
+        reject(err)
+      }
+    }, 3000)
+  })
+}
 
 async function startCollection() {
   if (!effectiveKeyword.value) {
@@ -133,13 +218,24 @@ async function startCollection() {
   result.value = null
 
   try {
-    const response = await nicheApi.collect(props.nicheSlug, {
+    // Kick off async collection — returns 202 with run_id immediately
+    const triggerResp = await nicheApi.collect(props.nicheSlug, {
       keyword: effectiveKeyword.value,
       limit: limit.value
     })
 
-    result.value = response.data.data
-    emit('collected', result.value)
+    const { run_id } = triggerResp.data.data
+
+    // Poll until the worker Lambda finishes
+    const finalRun = await pollRunStatus(run_id)
+
+    if (finalRun.status === 'error') {
+      error.value = finalRun.error_message || 'Collection failed'
+      return
+    }
+
+    result.value = finalRun
+    emit('collected', finalRun)
   } catch (err) {
     console.error('Collection failed:', err)
     error.value = err.response?.data?.error || err.message || 'Collection failed'
@@ -251,6 +347,23 @@ async function startCollection() {
   &:focus {
     outline: none;
     border-color: var(--color-primary-500);
+  }
+}
+
+.form-help {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  font-style: italic;
+
+  &.warning {
+    color: #d97706;
+    font-weight: 500;
+    font-style: normal;
+
+    strong {
+      color: #92400e;
+    }
   }
 }
 
