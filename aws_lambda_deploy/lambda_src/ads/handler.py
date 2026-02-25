@@ -338,15 +338,17 @@ def _list_pages(event: dict) -> dict:
 
 
 def _clear_all_ads(event: dict) -> dict:
-    """Delete all non-saved ads for a niche."""
+    """Delete ads for a niche. Pass include_saved=true to also delete saved ads."""
     user_id = _get_user_id(event)
     slug = _path_params(event).get("slug", "")
+    qp = _query_params(event)
 
     niche = _get_niche(user_id, slug)
     if not niche:
         return _response(404, {"success": False, "error": "Niche not found"})
 
-    deleted = AdRepo.clear_all(niche.id)
+    include_saved = qp.get("include_saved", "false").lower() == "true"
+    deleted = AdRepo.clear_all(niche.id, include_saved=include_saved)
     return _response(200, {
         "success": True,
         "message": f"Cleared {deleted} ads from niche",
