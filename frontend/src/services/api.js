@@ -101,7 +101,8 @@ export const nicheApi = {
   update: (slug, data) => api.patch(`/niches/${slug}`, data),
   delete: (slug) => api.delete(`/niches/${slug}`),
   stats: (slug) => api.get(`/niches/${slug}/stats`),
-  collect: (slug, data) => api.post(`/niches/${slug}/collect`, data)
+  collect: (slug, data) => api.post(`/niches/${slug}/collect`, data),
+  collectStatus: (slug, runId) => api.get(`/niches/${slug}/collection-runs/${runId}`)
 }
 
 export const adApi = {
@@ -109,7 +110,7 @@ export const adApi = {
   get: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}`),
   related: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}/related`),
   variantAnalysis: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}/variants/analysis`),
-  clearAll: (slug) => api.delete(`/niches/${slug}/ads/clear`)
+  clearAll: (slug, params = {}) => api.delete(`/niches/${slug}/ads/clear`, { params })
 }
 
 export const savedApi = {

@@ -39,6 +39,26 @@
       @collected="handleCollected"
     />
 
+    <!-- Clear Ads Modal (shown when there are saved ads) -->
+    <div v-if="showClearModal" class="modal-overlay" @click.self="showClearModal = false">
+      <div class="modal-dialog">
+        <h3>Clear Ads</h3>
+        <p>
+          You have <strong>{{ currentNiche?.stats?.saved_ads || 0 }} saved ad(s)</strong> in this niche.
+          What would you like to clear?
+        </p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="showClearModal = false">Cancel</button>
+          <button class="btn btn-secondary" :disabled="clearing" @click="executeClear(false)">
+            Clear Unsaved Only
+          </button>
+          <button class="btn btn-danger" :disabled="clearing" @click="executeClear(true)">
+            Clear All (incl. saved)
+          </button>
+        </div>
+      </div>
+    </div>
+
     <nav class="workspace-nav">
       <router-link :to="`/n/${nicheSlug}`" class="nav-item" exact-active-class="active">
         🔍 Search
@@ -68,6 +88,7 @@
   const adsStore = useAdsStore()
   const isDevMode = devMode
   const clearing = ref(false)
+  const showClearModal = ref(false)
 
   const nicheSlug = computed(() => route.params.nicheSlug)
   const currentNiche = computed(() => nichesStore.currentNiche)
@@ -78,22 +99,29 @@
     }
   }
 
-  function handleCollected(result) {
-    // Refresh the ads list after collection
-    if (result.ads_collected > 0) {
-      adsStore.searchAds(nicheSlug.value)
+  function handleCollected() {
+    // Always refresh after a completed collection so new ads appear
+    adsStore.searchAds(nicheSlug.value)
+    nichesStore.fetchNiche(nicheSlug.value)
+  }
+
+  function handleClearAds() {
+    const savedCount = currentNiche.value?.stats?.saved_ads || 0
+    if (savedCount > 0) {
+      showClearModal.value = true
+    } else {
+      executeClear(false)
     }
   }
 
-  async function handleClearAds() {
-    if (!confirm('Are you sure you want to clear all ads from this niche? This cannot be undone.')) {
-      return
-    }
-
+  async function executeClear(includeSaved) {
+    showClearModal.value = false
     clearing.value = true
 
     try {
-      const result = await adsStore.clearAllAds(nicheSlug.value)
+      const result = await adsStore.clearAllAds(nicheSlug.value, includeSaved)
+      // Refresh niche stats so "Your Niches" totals are correct
+      await nichesStore.fetchNiche(nicheSlug.value)
       alert(`✓ Cleared ${result.ads_deleted} ads from this niche`)
     } catch (error) {
       alert(`Failed to clear ads: ${error.message}`)
@@ -206,5 +234,62 @@
   .workspace-main {
     flex: 1;
     padding: var(--spacing-4);
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modal-dialog {
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+    h3 {
+      margin: 0 0 var(--spacing-3);
+      font-size: var(--font-size-lg);
+    }
+
+    p {
+      margin: 0 0 var(--spacing-4);
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: var(--spacing-2);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .btn-danger {
+    background-color: var(--color-error, #dc2626);
+    color: white;
+    border: none;
+
+    &:hover:not(:disabled) {
+      background-color: #b91c1c;
+    }
+  }
+
+  .btn-secondary {
+    background-color: var(--color-gray-200, #e5e7eb);
+    color: var(--color-text-primary);
+    border: none;
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-gray-300, #d1d5db);
+    }
   }
 </style>

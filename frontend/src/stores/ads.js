@@ -238,17 +238,23 @@ export const useAdsStore = defineStore('ads', {
       }
     },
 
-    async clearAllAds(nicheSlug) {
+    async clearAllAds(nicheSlug, includeSaved = false) {
       this.loading = true
       this.error = null
 
       try {
-        const response = await adApi.clearAll(nicheSlug)
+        const params = includeSaved ? { include_saved: 'true' } : {}
+        const response = await adApi.clearAll(nicheSlug, params)
 
         // Clear local state
         this.ads = []
         this.pagination = null
         this.clearSelectedAd()
+
+        if (includeSaved) {
+          this.savedAds = []
+          this.savedPagination = null
+        }
 
         return response.data
       } catch (error) {
