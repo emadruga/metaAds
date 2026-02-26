@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="modal-header">
         <div class="header-title">
-          <h3>Related Ads ({{ totalVariants }})</h3>
+          <h3>Related Ads ({{ related.length }})</h3>
           <span v-if="pageName" class="page-name">{{ pageName }}</span>
         </div>
         <button class="close-btn" @click="$emit('close')">✕</button>
@@ -23,16 +23,16 @@
       </div>
 
       <template v-else>
-        <!-- Variant Insights -->
+        <!-- Campaign Insights -->
         <div v-if="insights" class="insights-section">
-          <div class="insights-title">VARIANT INSIGHTS</div>
+          <div class="insights-title">CAMPAIGN INSIGHTS</div>
           <div class="insights-grid">
             <div class="insight-item">
               <span class="insight-label">Longest running:</span>
               <span class="insight-value">{{ insights.longest_running?.days_active || 0 }} days</span>
             </div>
-            <div class="insight-item" v-if="insights.total_variants">
-              <span class="insight-label">Total variants:</span>
+            <div class="insight-item">
+              <span class="insight-label">Total campaigns:</span>
               <span class="insight-value">{{ insights.total_variants }}</span>
             </div>
             <div class="insight-item" v-if="insights.newest?.start_date">
@@ -97,7 +97,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import CreativeCarousel from './CreativeCarousel.vue'
 
 const props = defineProps({
@@ -120,10 +119,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'select-ad'])
-
-const totalVariants = computed(() => {
-  return props.insights?.total_variants || props.related?.length || 0
-})
 
 function handleSelectAd(ad) {
   emit('select-ad', ad)
