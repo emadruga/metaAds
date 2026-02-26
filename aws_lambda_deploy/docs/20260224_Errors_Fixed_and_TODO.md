@@ -441,18 +441,42 @@ AdRepo.get_related(
 
 ---
 
-### 3. 🟡 MEDIUM — "View 6 other campaigns" but modal says "Total Variants: 7"
+### 3. ✅ FIXED — "View 6 other campaigns" but modal says "Total Variants: 7"
+
+**Status:** RESOLVED (2026-02-26)
 
 **Symptoms:**
-The AdTable row for "Booked in Love" shows a "+6" expand button (meaning 6 variants in the group beyond the first = 7 total), but the Variant Analysis modal header displays "Total Variants: 7" while the "View N other campaigns" link says 6.
+The button said "View 6 Other Campaigns" (correct) but the RelatedAdsModal header displayed "Related Ads (7)" and the insights section showed "Total variants: 7" (incorrect terminology and count).
 
-**Likely Root Cause:**
-Off-by-one: the button count is `group.ads.length - 1` (variants beyond the first) while the modal likely uses `group.ads.length` or `relatedAds.length` (total). One of the two counts includes/excludes the currently-displayed ad inconsistently.
+**Root Cause:**
+The backend `/related` endpoint returns OTHER campaigns (excluding the current ad) in the `related` array, but calculates `insights.total_variants = len(related) + 1` to include the original ad. The modal was using this `total_variants` count in the header, causing the off-by-one mismatch.
 
-**Files to check:**
-- `frontend/src/components/AdTable.vue` — expand button count expression
-- `frontend/src/components/VariantAnalysis.vue` (or similar) — "Total Variants" display
-- `lambda_src/ads/handler.py` → `_get_related()` — whether the current ad is excluded
+Additionally, "variants" terminology was incorrect here - these are "related campaigns" or "other campaigns" from the same advertiser (different headlines), NOT "variants" (which are same headline, different creatives).
+
+**Fix Applied:**
+1. **Modal header** (`RelatedAdsModal.vue` line 6): Changed from `{{ totalVariants }}` to `{{ related.length }}` to show the correct count of OTHER campaigns
+2. **Insights section** (lines 26-42): Changed "VARIANT INSIGHTS" to "CAMPAIGN INSIGHTS" and "Total variants" to "Total campaigns" for clearer terminology
+3. **Code cleanup**: Removed unused `totalVariants` computed property and `computed` import
+
+**Technical Details:**
+```vue
+<!-- BEFORE (incorrect) -->
+<h3>Related Ads ({{ totalVariants }})</h3>  <!-- totalVariants = 7 -->
+<div class="insights-title">VARIANT INSIGHTS</div>
+<span class="insight-label">Total variants:</span>
+
+<!-- AFTER (correct) -->
+<h3>Related Ads ({{ related.length }})</h3>  <!-- related.length = 6 -->
+<div class="insights-title">CAMPAIGN INSIGHTS</div>
+<span class="insight-label">Total campaigns:</span>
+```
+
+**Files Modified:**
+- `frontend/src/components/RelatedAdsModal.vue` (lines 6, 27, 34, 99-100, 122-125)
+
+**Deployed:**
+- Frontend build: 2026-02-26T23:55:00Z
+- CloudFront invalidation: IEEPXMWNZS7A092FCY8KA71L0I
 
 ---
 
