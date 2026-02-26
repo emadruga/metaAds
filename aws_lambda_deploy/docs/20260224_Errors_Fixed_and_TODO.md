@@ -1,8 +1,19 @@
-# Deployment Session - February 24, 2026
+# Deployment Session - February 24-26, 2026
 
 ## Summary
 
-This document tracks the critical security fixes and Meta API reliability improvements implemented during the February 24 debugging session. The session was triggered by intermittent 500 errors from Meta Ad Library API and a **critical security vulnerability** where Facebook access tokens were being leaked in error messages displayed to users.
+This document tracks fixes and improvements across multiple sessions:
+
+### February 24, 2026
+Critical security fixes and Meta API reliability improvements. The session was triggered by intermittent 500 errors from Meta Ad Library API and a **critical security vulnerability** where Facebook access tokens were being leaked in error messages displayed to users.
+
+### February 26, 2026 - "Sort by Variants" Fix
+Fixed the high-priority "Sort by Variants" filter bug that prevented users from sorting ad groups by variant count. The issue spanned both Flask backend and Lambda infrastructure, requiring coordinated fixes across multiple layers:
+- **Backend**: Modified response structure to return properly grouped objects
+- **Lambda Handler**: Added sort parameter extraction and forwarding
+- **Lambda AdRepo**: Implemented dynamic sorting logic for all sort options
+
+**Result**: Users can now properly sort ad groups by variants (count), days active, start date, or collection timestamp in both ascending and descending order.
 
 ---
 
@@ -332,18 +343,45 @@ Lambda → API Gateway → User Browser
 
 **Due to the critical security and reliability issues addressed today (Feb 24), the TODO list from yesterday's session remains unchanged. All priorities stay the same.**
 
-### 1. 🔴 HIGH — "Sort by Variants" filter not working
+### 1. ✅ FIXED — "Sort by Variants" filter not working
+
+**Status:** RESOLVED (2026-02-26)
 
 **Symptoms:**
-Selecting "Variants" in the Sort dropdown has no visible effect on the results order.
+Selecting "Variants" in the Sort dropdown had no visible effect on the results order.
 
-**Likely Root Cause:**
-The frontend sends `sort=variants` as a query param. The backend `AdRepo.search()` doesn't read a `sort` param from `filters` — it always sorts groups by `len(group.ads)` descending inside `_group_by_variant()`. Need to verify whether the sort param is even being passed through the filter pipeline and honoured.
+**Root Cause:**
+Multiple issues prevented the sort functionality from working:
+1. **Backend (Flask)**: The backend was grouping ads correctly but returning flattened ad objects instead of grouped objects with `variant_key` and `ads` array that the frontend expected.
+2. **Lambda Handler**: The handler wasn't extracting the `sort` and `order` query parameters.
+3. **Lambda AdRepo**: The `_group_by_variant()` function hardcoded sorting by `days_active` instead of accepting sort parameters.
 
-**Files to check:**
-- `frontend/src/components/SearchFilters.vue` — what params are sent
-- `lambda_src/ads/handler.py` — is `sort` extracted from query params?
-- `lambda_layers/shared/python/app/dynamodb/ad_repo.py` — `_group_by_variant()` sort logic
+**Fix Applied:**
+1. **Backend** (`backend/app/routes/ads.py`): Modified response structure to return grouped objects with:
+   - `variant_key`: Unique identifier for the group
+   - `page_name`, `headline`: Group metadata
+   - `count`: Number of variants in the group
+   - `ads`: Array of all ad variants in the group
+   - Additional fields: `days_active`, `is_active`, `start_date`, `thumbnail_url`, `platforms`, `cta`, `body`
+
+2. **Lambda Handler** (`lambda_src/ads/handler.py`): Added extraction of `sort` and `order` query parameters and passed them to `AdRepo.search()`.
+
+3. **Lambda AdRepo** (`lambda_layers/shared/python/app/dynamodb/ad_repo.py`):
+   - Updated `_group_by_variant()` to accept `sort` and `order` parameters
+   - Implemented sorting logic for all sort options: 'variants', 'days_active', 'start_date', 'collected_at'
+   - Updated `AdRepo.search()` signature to accept and pass through sort parameters
+   - Added sorting for flat list view (non-grouped)
+
+**Supported Sort Options:**
+- `variants`: Sort by number of variants (group count)
+- `days_active`: Sort by days active (max in group)
+- `start_date`: Sort by start date
+- `collected_at`: Sort by collection timestamp
+
+**Files Modified:**
+- `backend/app/routes/ads.py` (lines 181-212)
+- `lambda_src/ads/handler.py` (lines 120-138)
+- `lambda_layers/shared/python/app/dynamodb/ad_repo.py` (lines 107-157, 158-268)
 
 ---
 

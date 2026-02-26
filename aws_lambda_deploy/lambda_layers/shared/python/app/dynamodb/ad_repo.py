@@ -104,13 +104,17 @@ def _apply_filters(items: List[dict], filters: dict) -> List[dict]:
     return result
 
 
-def _group_by_variant(ads: List[Ad]) -> List[Dict[str, Any]]:
+def _group_by_variant(ads: List[Ad], sort: str = "variants", order: str = "desc") -> List[Dict[str, Any]]:
     """
     Group ads by (page_name, headline) — mirrors the original ads.py:130-198 logic.
 
     Returns a list of variant groups, each containing:
         variant_key, page_name, headline, count, days_active (max), ads (list)
-    Sorted by days_active descending (longest-running variant first).
+
+    Args:
+        ads: List of Ad objects to group
+        sort: Sort field - 'variants', 'days_active', 'start_date', or 'collected_at'
+        order: Sort order - 'asc' or 'desc'
     """
     groups: Dict[str, List[Ad]] = defaultdict(list)
     for ad in ads:
@@ -127,10 +131,30 @@ def _group_by_variant(ads: List[Ad]) -> List[Dict[str, Any]]:
             "headline": representative.headline,
             "count": len(group_ads),
             "days_active": max_days,
+            "start_date": representative.start_date,
+            "collected_at": representative.collected_at,
             "ads": [a.to_card_dict() for a in group_ads],
         })
 
-    result.sort(key=lambda g: g["days_active"], reverse=True)
+    # Sort based on the specified field
+    reverse = (order == "desc")
+
+    if sort == "variants":
+        # Sort by number of variants (count)
+        result.sort(key=lambda g: g["count"], reverse=reverse)
+    elif sort == "days_active":
+        # Sort by days_active
+        result.sort(key=lambda g: g["days_active"], reverse=reverse)
+    elif sort == "start_date":
+        # Sort by start_date
+        result.sort(key=lambda g: g["start_date"] or "", reverse=reverse)
+    elif sort == "collected_at":
+        # Sort by collected_at
+        result.sort(key=lambda g: g["collected_at"] or "", reverse=reverse)
+    else:
+        # Default: sort by variants
+        result.sort(key=lambda g: g["count"], reverse=reverse)
+
     return result
 
 
@@ -159,6 +183,8 @@ class AdRepo:
         niche_id: str,
         filters: Optional[dict] = None,
         group_by_variant: bool = True,
+        sort: str = "variants",
+        order: str = "desc",
         page: int = 1,
         per_page: int = 20,
     ) -> Dict[str, Any]:
@@ -168,6 +194,15 @@ class AdRepo:
         1. Query all AD# items for the niche (single partition scan).
         2. Apply application-side filters.
         3. Optionally group by variant and paginate.
+
+        Args:
+            niche_id: Niche ID to search within
+            filters: Filter dict for _apply_filters
+            group_by_variant: Whether to group by (page_name, headline)
+            sort: Sort field - 'variants', 'days_active', 'start_date', or 'collected_at'
+            order: Sort order - 'asc' or 'desc'
+            page: Page number (1-indexed)
+            per_page: Items per page
 
         Returns:
             {
@@ -208,7 +243,7 @@ class AdRepo:
         total_ads = len(ads)
 
         if group_by_variant:
-            groups = _group_by_variant(ads)
+            groups = _group_by_variant(ads, sort=sort, order=order)
             total = len(groups)
             start = (page - 1) * per_page
             end   = start + per_page
@@ -222,8 +257,18 @@ class AdRepo:
                 "has_next": end < total,
             }
         else:
-            # Flat list sorted by days_active desc
-            ads.sort(key=lambda a: a.days_active or 0, reverse=True)
+            # Flat list - apply sorting
+            reverse = (order == "desc")
+            if sort == "days_active":
+                ads.sort(key=lambda a: a.days_active or 0, reverse=reverse)
+            elif sort == "start_date":
+                ads.sort(key=lambda a: a.start_date or "", reverse=reverse)
+            elif sort == "collected_at":
+                ads.sort(key=lambda a: a.collected_at or "", reverse=reverse)
+            else:
+                # Default to days_active for flat list
+                ads.sort(key=lambda a: a.days_active or 0, reverse=reverse)
+
             total = total_ads
             start = (page - 1) * per_page
             end   = start + per_page

@@ -127,12 +127,18 @@ def _search_ads(event: dict) -> dict:
     except ValueError:
         per_page = 20
 
+    # Sort parameters
+    sort_field = qp.get("sort", "variants")
+    sort_order = qp.get("order", "desc")
+
     group_by_variant = qp.get("group_by_variant", "true").lower() != "false"
 
     result = AdRepo.search(
         niche_id=niche.id,
         filters=filters,
         group_by_variant=group_by_variant,
+        sort=sort_field,
+        order=sort_order,
         page=page_num,
         per_page=per_page,
     )

@@ -178,14 +178,31 @@ def search_ads(slug):
     end_idx = start_idx + per_page
     paginated_groups = groups_list[start_idx:end_idx]
 
-    # Flatten paginated groups to list of ads
-    paginated_ads = []
+    # Convert paginated groups to grouped objects for frontend
+    grouped_data = []
     for group in paginated_groups:
-        paginated_ads.extend(group)
+        # Use first ad as representative for group-level fields
+        first_ad = group[0]
+        variant_key = f"{first_ad.page_name}|{first_ad.headline or ''}"
+
+        grouped_data.append({
+            'variant_key': variant_key,
+            'page_name': first_ad.page_name,
+            'headline': first_ad.headline,
+            'count': len(group),
+            'days_active': first_ad.days_active,
+            'is_active': first_ad.is_active,
+            'start_date': first_ad.start_date.isoformat() if first_ad.start_date else None,
+            'thumbnail_url': first_ad.thumbnail_url,
+            'platforms': first_ad.platforms,
+            'cta': first_ad.cta_detected,
+            'body': first_ad.body,
+            'ads': [ad.to_card_dict() for ad in group]  # Include all variants
+        })
 
     return jsonify({
         'success': True,
-        'data': [ad.to_card_dict() for ad in paginated_ads],
+        'data': grouped_data,
         'pagination': {
             'page': page_num,
             'per_page': per_page,
