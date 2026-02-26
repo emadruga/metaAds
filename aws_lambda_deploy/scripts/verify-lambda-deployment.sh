@@ -3,6 +3,16 @@
 
 set -e
 
+# Detect script location and set base path
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ "$SCRIPT_DIR" == */aws_lambda_deploy/scripts ]]; then
+    # Running from aws_lambda_deploy/scripts
+    BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+else
+    # Running from project root or elsewhere
+    BASE_DIR="$(cd "$SCRIPT_DIR/../aws_lambda_deploy" && pwd)"
+fi
+
 AWS_PROFILE="${AWS_PROFILE:-metads}"
 FUNCTION_NAME="${1:-metaads-dev-ads}"
 LAYER_NAME="${2:-metaads-dev-shared-layer}"
@@ -13,7 +23,7 @@ echo ""
 
 # Check Lambda function hash
 echo "1️⃣  Lambda Function: $FUNCTION_NAME"
-LOCAL_FUNC_HASH=$(openssl dgst -sha256 -binary aws_lambda_deploy/lambda_stubs/ads.zip | openssl enc -base64)
+LOCAL_FUNC_HASH=$(openssl dgst -sha256 -binary "$BASE_DIR/lambda_stubs/ads.zip" | openssl enc -base64)
 AWS_FUNC_HASH=$(aws lambda get-function --profile "$AWS_PROFILE" --function-name "$FUNCTION_NAME" --query 'Configuration.CodeSha256' --output text)
 
 echo "   Local hash:  $LOCAL_FUNC_HASH"
@@ -28,7 +38,7 @@ echo ""
 
 # Check Lambda layer hash
 echo "2️⃣  Lambda Layer: $LAYER_NAME"
-LOCAL_LAYER_HASH=$(openssl dgst -sha256 -binary aws_lambda_deploy/lambda_stubs/shared_layer.zip | openssl enc -base64)
+LOCAL_LAYER_HASH=$(openssl dgst -sha256 -binary "$BASE_DIR/lambda_stubs/shared_layer.zip" | openssl enc -base64)
 LAYER_VERSION=$(aws lambda list-layer-versions --profile "$AWS_PROFILE" --layer-name "$LAYER_NAME" --query 'LayerVersions[0].Version' --output text)
 AWS_LAYER_HASH=$(aws lambda get-layer-version --profile "$AWS_PROFILE" --layer-name "$LAYER_NAME" --version-number "$LAYER_VERSION" --query 'Content.CodeSha256' --output text)
 

@@ -4,6 +4,12 @@
 
 **TL;DR:** Run this from the project root:
 ```bash
+./aws_lambda_deploy/scripts/verify-lambda-deployment.sh
+```
+
+Or from the aws_lambda_deploy directory:
+```bash
+cd aws_lambda_deploy
 ./scripts/verify-lambda-deployment.sh
 ```
 
@@ -19,6 +25,10 @@ Use the verification script that compares code hashes:
 
 ```bash
 # From project root
+./aws_lambda_deploy/scripts/verify-lambda-deployment.sh
+
+# Or from aws_lambda_deploy directory
+cd aws_lambda_deploy
 ./scripts/verify-lambda-deployment.sh
 
 # Custom function/layer names
@@ -179,7 +189,7 @@ cd ../../../
 ### 1. Before Making Changes
 ```bash
 # Verify current deployment is clean
-./scripts/verify-lambda-deployment.sh
+./aws_lambda_deploy/scripts/verify-lambda-deployment.sh
 ```
 
 ### 2. After Code Changes
@@ -213,7 +223,7 @@ terraform apply -target=aws_lambda_layer_version.shared -target=aws_lambda_funct
 ### 4. Verify Deployment
 ```bash
 cd ../../../  # Back to project root
-./scripts/verify-lambda-deployment.sh
+./aws_lambda_deploy/scripts/verify-lambda-deployment.sh
 ```
 
 ### 5. Test in Browser
@@ -240,7 +250,7 @@ zip ../../lambda_stubs/ads.zip handler.py
 
 # Verify again
 cd ../../../
-./scripts/verify-lambda-deployment.sh
+./aws_lambda_deploy/scripts/verify-lambda-deployment.sh
 ```
 
 ### "Layer code DIFFERS" but function code matches
@@ -311,7 +321,7 @@ Add to your CI/CD pipeline:
 # .github/workflows/deploy.yml
 - name: Verify deployment
   run: |
-    ./scripts/verify-lambda-deployment.sh
+    ./aws_lambda_deploy/scripts/verify-lambda-deployment.sh
     if [ $? -ne 0 ]; then
       echo "❌ Deployment verification failed!"
       exit 1
@@ -328,9 +338,10 @@ A: Terraform doesn't automatically rebuild ZIPs from source. You need to explici
 **Q: Can I automate the ZIP building?**
 A: Yes! Use a Makefile or shell script. Example:
 ```bash
-# scripts/build-lambdas.sh
+# aws_lambda_deploy/scripts/build-lambdas.sh
 #!/bin/bash
-cd aws_lambda_deploy/lambda_layers/shared
+cd "$(dirname "$0")/.."
+cd lambda_layers/shared
 zip -r ../../lambda_stubs/shared_layer.zip python/ -x "*.pyc" -x "*__pycache__*"
 
 cd ../../lambda_src/ads
