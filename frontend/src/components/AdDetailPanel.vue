@@ -157,7 +157,7 @@
       <VariantAnalysis
         v-if="ad.variant_count >= 5"
         :niche-slug="nicheSlug"
-        :ad-id="ad.id"
+        :ad-id="ad.meta_ad_id"
       />
     </template>
   </div>

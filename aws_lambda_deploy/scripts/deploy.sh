@@ -126,14 +126,15 @@ cat > "${FRONTEND_DIR}/.env.production" <<EOF
 # Do NOT commit this file (it is gitignored).
 
 # API Gateway HTTP API endpoint
-VITE_API_URL=${API_GATEWAY_URL}/api
+# Remove trailing slash from API_GATEWAY_URL to avoid double slash
+VITE_API_URL=${API_GATEWAY_URL%/}/api
 
 # Clerk publishable key (pk_test_... for dev, pk_live_... for prod)
 VITE_CLERK_PUBLISHABLE_KEY=${CLERK_KEY}
 EOF
 
 echo "  Written: ${FRONTEND_DIR}/.env.production"
-echo "  VITE_API_URL=${API_GATEWAY_URL}/api"
+echo "  VITE_API_URL=${API_GATEWAY_URL%/}/api"
 
 # ---------------------------------------------------------------------------
 # Step 3: Build the Vue 3 app
