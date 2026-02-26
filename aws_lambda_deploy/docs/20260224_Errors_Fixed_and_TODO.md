@@ -385,18 +385,59 @@ Multiple issues prevented the sort functionality from working:
 
 ---
 
-### 2. 🔴 HIGH — Variant Analysis broken for "Booked in Love"
+### 2. ✅ FIXED — Variant Analysis broken for "Booked in Love"
+
+**Status:** RESOLVED (2026-02-26)
 
 **Symptoms:**
-Opening the Variant Analysis modal for a "Booked in Love" ad shows an error or incomplete data.
+Opening the Variant Analysis modal for a "Booked in Love" ad (and other ads with missing `page_id`) showed incomplete or no related ads data.
 
-**Likely Root Cause:**
-`GET /api/niches/{slug}/ads/{ad_id}/variants/analysis` calls `AdRepo.get_related()` using `page_id`. "Booked in Love" ads may have inconsistent `page_id` values across collected items (some `None`, some populated), causing the related-ads query to return fewer items than expected or fail.
+**Root Cause:**
+The `_get_related_ads` endpoint relied exclusively on `page_id` to query related ads via GSI1. When ads had `None` or empty `page_id` values (which happens for some advertisers like "Booked in Love"), the query `NICHE_PAGE#{niche_id}#` would not match any ads, returning empty results.
 
-**Files to check:**
-- `lambda_src/ads/handler.py` → `_get_variant_analysis()`
-- `lambda_layers/shared/python/app/dynamodb/ad_repo.py` → `get_related()`
-- DynamoDB items: verify `page_id` field is consistently populated for this page
+**Fix Applied:**
+1. **Lambda AdRepo** (`lambda_layers/shared/python/app/dynamodb/ad_repo.py`):
+   - Updated `get_related()` method to accept optional `page_name` parameter
+   - Added fallback logic: when `page_id` is empty/None, falls back to filtering by `page_name`
+   - Fallback performs full table scan with app-side filtering (less efficient but works)
+   - Original GSI1 query path preserved for ads with valid `page_id` (performance)
+
+2. **Lambda Handler** (`lambda_src/ads/handler.py`):
+   - Updated `_get_related_ads` to pass `page_name` when `page_id` is missing
+   - Logic: `page_name=ad.page_name if not ad.page_id else None`
+
+**Technical Details:**
+```python
+# Before (broken for missing page_id):
+AdRepo.get_related(
+    niche_id=niche.id,
+    page_id=ad.page_id or "",  # Empty string matches nothing
+    exclude_meta_ad_id=ad_id,
+    limit=limit,
+)
+
+# After (works with fallback):
+AdRepo.get_related(
+    niche_id=niche.id,
+    page_id=ad.page_id or "",
+    exclude_meta_ad_id=ad_id,
+    limit=limit,
+    page_name=ad.page_name if not ad.page_id else None,  # Fallback
+)
+```
+
+**Performance Impact:**
+- Ads with `page_id`: Fast GSI1 query (no change)
+- Ads without `page_id`: Slower full table scan + filtering (acceptable for edge cases)
+- "Booked in Love" and similar advertisers now work correctly
+
+**Files Modified:**
+- `lambda_layers/shared/python/app/dynamodb/ad_repo.py` (lines 284-335)
+- `lambda_src/ads/handler.py` (lines 211-217)
+
+**Deployed:**
+- Lambda Layer version: 14
+- Lambda Function: metaads-dev-ads (updated 2026-02-26)
 
 ---
 

@@ -213,6 +213,7 @@ def _get_related_ads(event: dict) -> dict:
         page_id=ad.page_id or "",
         exclude_meta_ad_id=ad_id,
         limit=limit,
+        page_name=ad.page_name if not ad.page_id else None,
     )
 
     total_variants = len(related) + 1

@@ -282,11 +282,45 @@ class AdRepo:
             }
 
     @staticmethod
-    def get_related(niche_id: str, page_id: str, exclude_meta_ad_id: str = "", limit: int = 6) -> List[dict]:
+    def get_related(
+        niche_id: str,
+        page_id: str,
+        exclude_meta_ad_id: str = "",
+        limit: int = 6,
+        page_name: str = None
+    ) -> List[dict]:
         """
         Other ads from the same page within the niche (GSI1 query).
+        Falls back to page_name matching if page_id is empty/None.
         """
         table = get_table()
+
+        # If page_id is empty or None, fall back to page_name filtering
+        if not page_id and page_name:
+            # Query all ads in niche and filter by page_name
+            items: list = []
+            query_kwargs = dict(
+                KeyConditionExpression=(
+                    Key("PK").eq(Ad.pk(niche_id)) &
+                    Key("SK").begins_with("AD#")
+                ),
+            )
+            while True:
+                resp = table.query(**query_kwargs)
+                for item in resp.get("Items", []):
+                    if (item.get("page_name") == page_name and
+                        item.get("meta_ad_id") != exclude_meta_ad_id):
+                        items.append(item)
+                        if len(items) >= limit:
+                            break
+                if len(items) >= limit or not resp.get("LastEvaluatedKey"):
+                    break
+                query_kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
+            ads = [Ad.from_item(i).to_card_dict() for i in items]
+            return ads[:limit]
+
+        # Original GSI1 query path (when page_id exists)
         resp = table.query(
             IndexName=GSI1,
             KeyConditionExpression=(
