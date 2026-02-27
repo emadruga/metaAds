@@ -28,6 +28,7 @@ import boto3
 
 from app.dynamodb.niche_repo import NicheRepo
 from app.dynamodb.collection_repo import CollectionRepo
+from app.dynamodb.ad_repo import AdRepo
 from app.dynamodb.models import Niche, CollectionRun
 from app.utils.ids import generate_uuid, now_iso8601
 
@@ -309,6 +310,92 @@ def _get_collection_run(event: dict) -> dict:
     }})
 
 
+def _get_collection_health(event: dict) -> dict:
+    """
+    Return per-user collection health stats across all niches.
+
+    For each niche owned by the caller, reports:
+      - runs in the last 24 h and their success rate
+      - hours elapsed since the most recent run
+      - number of active ads that haven't been seen in the last 24 h (stale)
+    """
+    from datetime import datetime, timezone, timedelta
+
+    user_id = _get_user_id(event)
+    niches = NicheRepo.list_for_user(user_id)
+    cutoff_24h = (
+        datetime.now(tz=timezone.utc) - timedelta(hours=24)
+    ).isoformat()
+
+    summary_runs_24h = 0
+    summary_successful_24h = 0
+    niches_data = []
+
+    for niche in niches:
+        # Recent runs — fetch up to 50 so we cover a busy 24-h window
+        recent_runs = CollectionRepo.list_for_niche(niche.id, limit=50)
+        runs_24h = [r for r in recent_runs if (r.started_at or "") >= cutoff_24h]
+        successful_24h = sum(1 for r in runs_24h if r.status == "completed")
+        runs_24h_count = len(runs_24h)
+        success_rate = (
+            round(successful_24h / runs_24h_count * 100, 1)
+            if runs_24h_count else None
+        )
+
+        # Hours since the most recent run completed (or started if in-flight)
+        latest = recent_runs[0] if recent_runs else None
+        hours_since_last: float | None = None
+        if latest:
+            ref_time = latest.completed_at or latest.started_at
+            if ref_time:
+                try:
+                    ref_dt = datetime.fromisoformat(ref_time)
+                    if ref_dt.tzinfo is None:
+                        ref_dt = ref_dt.replace(tzinfo=timezone.utc)
+                    hours_since_last = round(
+                        (datetime.now(tz=timezone.utc) - ref_dt).total_seconds() / 3600,
+                        1,
+                    )
+                except ValueError:
+                    pass
+
+        # Ads not seen in the last 24 h
+        stale_ads_count = len(AdRepo.get_stale_ads(niche.id, hours_threshold=24))
+
+        summary_runs_24h += runs_24h_count
+        summary_successful_24h += successful_24h
+
+        niches_data.append({
+            "niche_id": niche.id,
+            "slug": niche.slug,
+            "name": niche.name,
+            "auto_collect_enabled": niche.auto_collect_enabled,
+            "auto_collect_interval_hours": niche.auto_collect_interval_hours,
+            "hours_since_last_run": hours_since_last,
+            "runs_24h": runs_24h_count,
+            "successful_24h": successful_24h,
+            "success_rate": success_rate,
+            "stale_ads_count": stale_ads_count,
+            "last_run_status": latest.status if latest else None,
+        })
+
+    total_niches = len(niches)
+    niches_with_auto_collect = sum(1 for n in niches if n.auto_collect_enabled)
+
+    return _response(200, {
+        "success": True,
+        "data": {
+            "summary": {
+                "total_niches": total_niches,
+                "niches_with_auto_collect": niches_with_auto_collect,
+                "total_runs_24h": summary_runs_24h,
+                "total_successful_24h": summary_successful_24h,
+            },
+            "niches": niches_data,
+        },
+    })
+
+
 # ---------------------------------------------------------------------------
 # Lambda entry point
 # ---------------------------------------------------------------------------
@@ -322,6 +409,7 @@ _ROUTES: dict[tuple[str, str], callable] = {
     ("GET",    "/api/niches/{slug}/stats"):                                 _get_niche_stats,
     ("POST",   "/api/niches/{slug}/collect"):                               _trigger_collection,
     ("GET",    "/api/niches/{slug}/collection-runs/{run_id}"):              _get_collection_run,
+    ("GET",    "/api/admin/collection/health"):                             _get_collection_health,
 }
 
 

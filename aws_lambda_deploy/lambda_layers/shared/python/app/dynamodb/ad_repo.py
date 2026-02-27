@@ -572,3 +572,42 @@ class AdRepo:
             deleted += len(batch)
 
         return deleted
+
+    @staticmethod
+    def get_stale_ads(niche_id: str, hours_threshold: int = 12) -> List[Ad]:
+        """
+        Return active ads whose last_seen_at is older than hours_threshold hours.
+
+        Uses a paginated Query on PK=NICHE#<id> / SK begins_with AD#, then
+        filters server-side for:
+          - is_active == True
+          - last_seen_at < cutoff  (ad was not seen in the recent window)
+          - last_seen_at > ""      (exclude legacy items that pre-date the field)
+        """
+        from datetime import datetime, timezone, timedelta
+
+        cutoff = (
+            datetime.now(tz=timezone.utc) - timedelta(hours=hours_threshold)
+        ).isoformat()
+
+        table = get_table()
+        items: list = []
+        query_kwargs: dict = dict(
+            KeyConditionExpression=(
+                Key("PK").eq(Ad.pk(niche_id)) &
+                Key("SK").begins_with("AD#")
+            ),
+            FilterExpression=(
+                Attr("is_active").eq(True) &
+                Attr("last_seen_at").lt(cutoff) &
+                Attr("last_seen_at").gt("")
+            ),
+        )
+        while True:
+            resp = table.query(**query_kwargs)
+            items.extend(resp.get("Items", []))
+            if not resp.get("LastEvaluatedKey"):
+                break
+            query_kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
+        return [Ad.from_item(i) for i in items]

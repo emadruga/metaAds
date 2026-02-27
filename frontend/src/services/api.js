@@ -124,3 +124,7 @@ export const authApi = {
   me: () => api.get('/auth/me'),
   health: () => api.get('/health')
 }
+
+export const collectApi = {
+  getHealth: () => api.get('/admin/collection/health')
+}

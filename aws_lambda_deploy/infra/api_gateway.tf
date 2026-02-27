@@ -289,6 +289,18 @@ resource "aws_apigatewayv2_route" "niches_collection_run_status" {
 }
 
 # -----------------------------------------------------------------------------
+# Routes: Collection health (admin)
+# -----------------------------------------------------------------------------
+
+resource "aws_apigatewayv2_route" "collection_health" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /api/admin/collection/health"
+  target             = "integrations/${aws_apigatewayv2_integration.niches.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+# -----------------------------------------------------------------------------
 # Routes: Collection
 # -----------------------------------------------------------------------------
 

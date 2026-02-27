@@ -62,6 +62,14 @@ const routes = [
     ]
   },
 
+  // Admin routes
+  {
+    path: '/admin/collection-health',
+    name: 'AdminCollectionHealth',
+    component: () => import('@/views/AdminCollectionView.vue'),
+    meta: { requiresAuth: true }
+  },
+
   // Catch-all redirect
   {
     path: '/:pathMatch(.*)*',
