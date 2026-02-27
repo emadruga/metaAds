@@ -288,6 +288,42 @@ resource "aws_lambda_function" "collect_worker" {
 }
 
 # -----------------------------------------------------------------------------
+# Collection Scheduler Lambda
+# Triggered by EventBridge Scheduler (cron every 3 hours).
+# Lists opt-in niches, checks timing, fan-outs one collect_worker per keyword.
+# -----------------------------------------------------------------------------
+
+resource "aws_lambda_function" "collect_scheduler" {
+  function_name = "${local.name_prefix}-collect-scheduler"
+  description   = "Periodic scheduler: scans opt-in niches, fans out collect_worker per keyword"
+  role          = aws_iam_role.lambda_collector.arn
+  runtime       = var.lambda_runtime
+  handler       = "handler.handler"
+  timeout       = 60   # Bounded: scan + N async invocations; well under 1 min
+  memory_size   = 256
+
+  filename         = "${local.stubs_path}/collect_scheduler.zip"
+  source_code_hash = filebase64sha256("${local.stubs_path}/collect_scheduler.zip")
+
+  layers = [aws_lambda_layer_version.shared.arn]
+
+  environment {
+    variables = merge(local.common_env, {
+      COLLECT_WORKER_ARN = aws_lambda_function.collect_worker.arn
+    })
+  }
+
+  depends_on = [
+    aws_cloudwatch_log_group.lambda_collect_scheduler,
+    aws_iam_role_policy_attachment.lambda_collector_logs
+  ]
+
+  tags = {
+    Name = "${local.name_prefix}-collect-scheduler"
+  }
+}
+
+# -----------------------------------------------------------------------------
 # Step 5.4: Dead Letter Queue for collect_worker failed async invocations
 #
 # When collect_trigger invokes collect_worker with InvocationType="Event",

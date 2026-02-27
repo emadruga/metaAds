@@ -118,7 +118,7 @@ resource "aws_iam_role" "lambda_collector" {
   }
 }
 
-# DynamoDB access for Collector (same as API)
+# DynamoDB access for Collector (same as API, plus Scan for the scheduler)
 resource "aws_iam_role_policy" "lambda_collector_dynamodb" {
   name = "${local.name_prefix}-lambda-collector-dynamodb"
   role = aws_iam_role.lambda_collector.id
@@ -135,6 +135,7 @@ resource "aws_iam_role_policy" "lambda_collector_dynamodb" {
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
           "dynamodb:Query",
+          "dynamodb:Scan",
           "dynamodb:BatchWriteItem",
           "dynamodb:BatchGetItem"
         ]

@@ -66,6 +66,15 @@ resource "aws_cloudwatch_log_group" "lambda_collect_worker" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "lambda_collect_scheduler" {
+  name              = "/aws/lambda/${local.name_prefix}-collect-scheduler"
+  retention_in_days = var.cloudwatch_log_retention_days
+
+  tags = {
+    Name = "${local.name_prefix}-collect-scheduler-logs"
+  }
+}
+
 resource "aws_cloudwatch_log_group" "lambda_authorizer" {
   name              = "/aws/lambda/${local.name_prefix}-authorizer"
   retention_in_days = var.cloudwatch_log_retention_days

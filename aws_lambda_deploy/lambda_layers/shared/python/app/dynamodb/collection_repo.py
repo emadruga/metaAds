@@ -60,6 +60,12 @@ class CollectionRepo:
         )
         return [CollectionRun.from_item(i) for i in resp.get("Items", [])]
 
+    @staticmethod
+    def get_latest_for_niche(niche_id: str) -> Optional[CollectionRun]:
+        """Return the single most recent CollectionRun for a niche, or None."""
+        runs = CollectionRepo.list_for_niche(niche_id, limit=1)
+        return runs[0] if runs else None
+
     # ------------------------------------------------------------------
     # Write
     # ------------------------------------------------------------------

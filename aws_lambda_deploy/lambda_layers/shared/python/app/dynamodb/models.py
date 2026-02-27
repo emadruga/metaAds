@@ -226,6 +226,7 @@ class Ad:
     is_active: bool = True
     days_active: Optional[int] = None
     collected_at: str = ""
+    last_seen_at: str = ""          # Updated on every collection pass
 
     # Platforms
     platforms: List[str] = field(default_factory=list)
@@ -289,6 +290,7 @@ class Ad:
             "is_active": self.is_active,
             "days_active": self.days_active,
             "collected_at": self.collected_at,
+            "last_seen_at": self.last_seen_at,
             "platforms": json.dumps(self.platforms),
             "country_codes": json.dumps(self.country_codes),
             "snapshot_url": self.snapshot_url,
@@ -335,6 +337,7 @@ class Ad:
             is_active=item.get("is_active", True),
             days_active=int(item["days_active"]) if item.get("days_active") is not None else None,
             collected_at=item.get("collected_at", ""),
+            last_seen_at=item.get("last_seen_at", ""),
             platforms=_loads_list(item.get("platforms", "[]")),
             country_codes=_loads_list(item.get("country_codes", "[]")),
             snapshot_url=item.get("snapshot_url", ""),
@@ -369,6 +372,7 @@ class Ad:
             "is_active": self.is_active,
             "days_active": self.days_active,
             "collected_at": self.collected_at,
+            "last_seen_at": self.last_seen_at,
             "platforms": self.platforms,
             "country_codes": self.country_codes,
             "snapshot_url": self.snapshot_url,

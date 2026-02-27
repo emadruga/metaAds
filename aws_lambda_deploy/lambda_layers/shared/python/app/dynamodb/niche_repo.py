@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 from app.dynamodb.client import get_table, GSI1, GSI2
@@ -71,6 +71,31 @@ class NicheRepo:
         )
         items = resp.get("Items", [])
         return Niche.from_item(items[0]) if items else None
+
+    @staticmethod
+    def list_all_with_auto_collect() -> List[Niche]:
+        """
+        Return every active niche that has auto_collect_enabled=True,
+        across all users.  Uses a full-table Scan (acceptable because
+        the scheduler runs infrequently and niche counts are bounded).
+        """
+        table = get_table()
+        niches: List[Niche] = []
+        kwargs: dict = dict(
+            FilterExpression=(
+                Attr("entity_type").eq("NICHE") &
+                Attr("is_active").eq(True) &
+                Attr("auto_collect_enabled").eq(True)
+            ),
+        )
+        while True:
+            resp = table.scan(**kwargs)
+            niches.extend(Niche.from_item(i) for i in resp.get("Items", []))
+            last_key = resp.get("LastEvaluatedKey")
+            if not last_key:
+                break
+            kwargs["ExclusiveStartKey"] = last_key
+        return niches
 
     # ------------------------------------------------------------------
     # Write

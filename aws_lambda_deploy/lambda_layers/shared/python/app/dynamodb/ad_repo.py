@@ -436,6 +436,7 @@ class AdRepo:
         if is_new:
             ad.id = ad.id or generate_uuid()
             ad.collected_at = now
+            ad.last_seen_at = now
             table.put_item(Item=ad.to_item())
         else:
             # Preserve saved state from existing record
@@ -443,7 +444,8 @@ class AdRepo:
             ad.is_saved = existing.is_saved
             ad.saved_at = existing.saved_at
             ad.saved_tags = existing.saved_tags
-            ad.collected_at = existing.collected_at
+            ad.collected_at = existing.collected_at  # immutable: keep original
+            ad.last_seen_at = now                     # updated on every pass
             table.put_item(Item=ad.to_item())
 
         return ad, is_new
