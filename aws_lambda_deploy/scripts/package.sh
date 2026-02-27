@@ -34,7 +34,7 @@ echo ""
 # Step 1: Package the shared layer
 # ---------------------------------------------------------------------------
 
-echo "[1/8] Packaging shared layer..."
+echo "[1/9] Packaging shared layer..."
 
 SHARED_LAYER_DIR="${LAMBDA_LAYERS}/shared"
 LAYER_BUILD_DIR="${SHARED_LAYER_DIR}/build"
@@ -98,12 +98,13 @@ HANDLERS=(
   "saved"
   "collect_trigger"
   "collect_worker"
+  "collect_scheduler"
 )
 
 STEP=2
 for HANDLER in "${HANDLERS[@]}"; do
   echo ""
-  echo "[${STEP}/8] Packaging ${HANDLER} handler..."
+  echo "[${STEP}/9] Packaging ${HANDLER} handler..."
 
   HANDLER_DIR="${LAMBDA_SRC}/${HANDLER}"
   HANDLER_ZIP="${OUTPUT_DIR}/${HANDLER}.zip"
