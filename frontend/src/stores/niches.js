@@ -130,6 +130,39 @@ export const useNichesStore = defineStore('niches', {
       }
     },
 
+    async toggleAutoCollect(slug, enabled) {
+      // Optimistic update — flip the flag in the store immediately
+      const index = this.niches.findIndex(n => n.slug === slug)
+      if (index !== -1) {
+        this.niches[index] = { ...this.niches[index], auto_collect_enabled: enabled }
+      }
+      if (this.currentNiche?.slug === slug) {
+        this.currentNiche = { ...this.currentNiche, auto_collect_enabled: enabled }
+      }
+
+      // Silent PATCH — no loading spinner
+      try {
+        const response = await nicheApi.update(slug, { auto_collect_enabled: enabled })
+        const updated = response.data.data
+        if (index !== -1) {
+          this.niches[index] = updated
+        }
+        if (this.currentNiche?.slug === slug) {
+          this.currentNiche = updated
+        }
+      } catch (error) {
+        // Revert optimistic update on failure
+        if (index !== -1) {
+          this.niches[index] = { ...this.niches[index], auto_collect_enabled: !enabled }
+        }
+        if (this.currentNiche?.slug === slug) {
+          this.currentNiche = { ...this.currentNiche, auto_collect_enabled: !enabled }
+        }
+        console.error('Failed to toggle auto-collect:', error)
+        throw error
+      }
+    },
+
     setCurrentNiche(niche) {
       this.currentNiche = niche
     },

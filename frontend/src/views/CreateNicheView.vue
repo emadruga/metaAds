@@ -56,15 +56,22 @@
         </div>
 
         <div class="form-group">
-          <label for="keywords">Keywords (comma-separated)</label>
+          <label for="keywords">
+            Keywords (comma-separated)
+            <span class="keyword-count" :class="{ 'keyword-count--over': keywordCount > 5 }">
+              {{ keywordCount }}/5
+            </span>
+          </label>
           <input
             id="keywords"
             v-model="keywordsInput"
             type="text"
             class="input"
+            :class="{ 'input--error': keywordCount > 5 }"
             placeholder="video editing ai, opus clip, descript"
           />
-          <small>These keywords will be used when collecting ads</small>
+          <small v-if="keywordCount <= 5">These keywords will be used when collecting ads. Max 5 keywords per niche.</small>
+          <small v-else class="hint--error">Only 5 keywords can be used per niche at the moment. Please remove {{ keywordCount - 5 }} keyword{{ keywordCount - 5 > 1 ? 's' : '' }}.</small>
         </div>
 
         <div class="form-group">
@@ -84,7 +91,7 @@
 
         <div class="form-actions">
           <router-link to="/" class="btn btn-secondary">Cancel</router-link>
-          <button type="submit" class="btn btn-primary" :disabled="loading">
+          <button type="submit" class="btn btn-primary" :disabled="loading || keywordCount > 5">
             {{ loading ? 'Creating...' : 'Create Niche' }}
           </button>
         </div>
@@ -113,6 +120,9 @@ const countriesInput = ref('US')
 
 const loading = computed(() => nichesStore.loading)
 const error = computed(() => nichesStore.error)
+const keywordCount = computed(() =>
+  keywordsInput.value.split(',').map(k => k.trim()).filter(k => k).length
+)
 
 async function handleSubmit() {
   const keywords = keywordsInput.value
@@ -204,6 +214,30 @@ async function handleSubmit() {
 
 textarea.input {
   resize: vertical;
+}
+
+.keyword-count {
+  font-weight: 400;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: var(--spacing-2);
+
+  &--over {
+    color: #dc2626;
+    font-weight: 600;
+  }
+}
+
+.input--error {
+  border-color: #dc2626 !important;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  }
+}
+
+.hint--error {
+  color: #dc2626 !important;
 }
 
 .error-message {

@@ -121,7 +121,8 @@ class NicheRepo:
         if not niche or niche.user_id != user_id:
             return None
 
-        allowed = {"name", "description", "keywords", "countries", "platforms", "is_active"}
+        allowed = {"name", "description", "keywords", "countries", "platforms", "is_active",
+                   "auto_collect_enabled", "auto_collect_interval_hours"}
         import json
         updates: dict = {}
         for k, v in kwargs.items():

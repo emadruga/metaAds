@@ -75,15 +75,22 @@
           <h2 class="section-title">Collection Settings</h2>
 
           <div class="form-group">
-            <label for="keywords">Keywords</label>
+            <label for="keywords">
+              Keywords
+              <span class="keyword-count" :class="{ 'keyword-count--over': keywordCount > 5 }">
+                {{ keywordCount }}/5
+              </span>
+            </label>
             <input
               id="keywords"
               v-model="keywordsInput"
               type="text"
               class="input"
+              :class="{ 'input--error': keywordCount > 5 }"
               placeholder="video editing ai, opus clip, descript"
             />
-            <small>Comma-separated keywords for ad collection</small>
+            <small v-if="keywordCount <= 5">Comma-separated keywords for ad collection. Max 5 keywords per niche.</small>
+            <small v-else class="hint--error">Only 5 keywords can be used per niche at the moment. Please remove {{ keywordCount - 5 }} keyword{{ keywordCount - 5 > 1 ? 's' : '' }}.</small>
           </div>
 
           <div class="form-group">
@@ -153,7 +160,7 @@
           <router-link :to="`/n/${currentSlug}`" class="btn btn-secondary">
             Cancel
           </router-link>
-          <button type="submit" class="btn btn-primary" :disabled="saving">
+          <button type="submit" class="btn btn-primary" :disabled="saving || keywordCount > 5">
             {{ saving ? 'Saving...' : 'Save Changes' }}
           </button>
         </div>
@@ -224,7 +231,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNichesStore } from '@/stores/niches'
 
@@ -246,6 +253,10 @@ const form = ref({
 
 const keywordsInput = ref('')
 const countriesInput = ref('US')
+
+const keywordCount = computed(() =>
+  keywordsInput.value.split(',').map(k => k.trim()).filter(k => k).length
+)
 
 const saving = ref(false)
 const error = ref(null)
@@ -536,6 +547,30 @@ textarea.input {
   &:hover span {
     color: var(--color-primary);
   }
+}
+
+.keyword-count {
+  font-weight: 400;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: var(--spacing-2);
+
+  &--over {
+    color: #dc2626;
+    font-weight: 600;
+  }
+}
+
+.input--error {
+  border-color: #dc2626 !important;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  }
+}
+
+.hint--error {
+  color: #dc2626 !important;
 }
 
 .error-message {

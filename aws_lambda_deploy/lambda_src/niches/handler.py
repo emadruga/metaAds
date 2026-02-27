@@ -103,6 +103,10 @@ def _create_niche(event: dict) -> dict:
     if not data.get("name"):
         return _response(400, {"success": False, "error": "Name is required"})
 
+    keywords = data.get("keywords") or []
+    if len(keywords) > 5:
+        return _response(400, {"success": False, "error": "A niche can have at most 5 keywords"})
+
     slug = data.get("slug") or _slugify(data["name"])
 
     existing = NicheRepo.get_by_slug(user_id, slug)
@@ -115,7 +119,7 @@ def _create_niche(event: dict) -> dict:
         name=data["name"],
         slug=slug,
         description=data.get("description") or "",
-        keywords=data.get("keywords") or [],
+        keywords=keywords,
         countries=data.get("countries") or ["US"],
         platforms=data.get("platforms") or ["instagram"],
         is_active=True,
@@ -148,8 +152,15 @@ def _update_niche(event: dict) -> dict:
     if not niche:
         return _response(404, {"success": False, "error": "Niche not found"})
 
+    if "keywords" in data and len(data["keywords"]) > 5:
+        return _response(400, {"success": False, "error": "A niche can have at most 5 keywords"})
+
+    if "auto_collect_interval_hours" in data and data["auto_collect_interval_hours"] not in [2, 3, 6, 12]:
+        return _response(400, {"success": False, "error": "Invalid interval: must be 2, 3, 6, or 12"})
+
     updates = {}
-    for field in ("name", "description", "keywords", "countries", "platforms"):
+    for field in ("name", "description", "keywords", "countries", "platforms",
+                  "auto_collect_enabled", "auto_collect_interval_hours"):
         if field in data:
             updates[field] = data[field]
 

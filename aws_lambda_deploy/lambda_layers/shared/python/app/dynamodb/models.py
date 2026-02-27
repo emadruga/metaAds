@@ -121,6 +121,8 @@ class Niche:
     countries: List[str] = field(default_factory=lambda: ["US"])
     platforms: List[str] = field(default_factory=lambda: ["instagram"])
     is_active: bool = True
+    auto_collect_enabled: bool = False
+    auto_collect_interval_hours: int = 3
     created_at: str = ""
     updated_at: str = ""
 
@@ -154,6 +156,8 @@ class Niche:
             "countries": json.dumps(self.countries),
             "platforms": json.dumps(self.platforms),
             "is_active": self.is_active,
+            "auto_collect_enabled": self.auto_collect_enabled,
+            "auto_collect_interval_hours": self.auto_collect_interval_hours,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -170,6 +174,8 @@ class Niche:
             countries=_loads_list(item.get("countries", '["US"]')),
             platforms=_loads_list(item.get("platforms", '["instagram"]')),
             is_active=item.get("is_active", True),
+            auto_collect_enabled=item.get("auto_collect_enabled", False),
+            auto_collect_interval_hours=int(item.get("auto_collect_interval_hours", 3)),
             created_at=item.get("created_at", ""),
             updated_at=item.get("updated_at", ""),
         )
@@ -185,6 +191,8 @@ class Niche:
             "countries": self.countries,
             "platforms": self.platforms,
             "is_active": self.is_active,
+            "auto_collect_enabled": self.auto_collect_enabled,
+            "auto_collect_interval_hours": self.auto_collect_interval_hours,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
