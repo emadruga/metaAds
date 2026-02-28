@@ -280,6 +280,14 @@ resource "aws_apigatewayv2_route" "niches_stats" {
   authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
 }
 
+resource "aws_apigatewayv2_route" "niches_collection_runs_list" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /api/niches/{slug}/collection-runs"
+  target             = "integrations/${aws_apigatewayv2_integration.niches.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
 resource "aws_apigatewayv2_route" "niches_collection_run_status" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /api/niches/{slug}/collection-runs/{run_id}"
