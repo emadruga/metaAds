@@ -4,6 +4,11 @@
       <div class="header-left">
         <h1 class="logo">MetAds</h1>
       </div>
+      <nav class="header-nav">
+        <router-link to="/admin/collection-health" class="nav-link">
+          📡 Collection Health
+        </router-link>
+      </nav>
       <div class="header-right">
         <!-- In dev mode, show simple user badge instead of Clerk -->
         <div v-if="isDevMode" class="dev-user-badge">
@@ -94,6 +99,32 @@
     font-size: var(--font-size-xl);
     font-weight: 700;
     color: var(--color-gray-900);
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  .nav-link {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+
+    &:hover {
+      color: var(--color-gray-900);
+      background-color: var(--color-gray-100);
+    }
+
+    &.router-link-active {
+      color: var(--color-primary-600);
+      background-color: var(--color-primary-50);
+    }
   }
 
   .dev-user-badge {

@@ -181,9 +181,8 @@ function statusBadgeClass(status) {
 <style scoped>
 .admin-collection {
   min-height: 100vh;
-  background: #0f1117;
-  color: #e2e8f0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-gray-900);
 }
 
 /* Header */
@@ -191,8 +190,9 @@ function statusBadgeClass(status) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid #2d3748;
+  padding: var(--spacing-4) var(--spacing-6);
+  background-color: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .header-left {
@@ -202,15 +202,15 @@ function statusBadgeClass(status) {
 }
 
 .back-link {
-  color: #a0aec0;
+  color: var(--color-text-secondary);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
 }
 
-.back-link:hover { color: #e2e8f0; }
+.back-link:hover { color: var(--color-gray-900); }
 
 .page-title {
-  font-size: 1.5rem;
+  font-size: var(--font-size-2xl);
   font-weight: 700;
   margin: 0;
 }
@@ -219,10 +219,10 @@ function statusBadgeClass(status) {
 .admin-main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--spacing-8);
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--spacing-6);
 }
 
 /* States */
@@ -241,8 +241,8 @@ function statusBadgeClass(status) {
 .spinner {
   width: 2rem;
   height: 2rem;
-  border: 3px solid #2d3748;
-  border-top-color: #667eea;
+  border: 3px solid var(--color-gray-200);
+  border-top-color: var(--color-primary-500);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -253,26 +253,27 @@ function statusBadgeClass(status) {
 .summary-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  gap: var(--spacing-4);
 }
 
 .summary-card {
-  background: #1a202c;
-  border: 1px solid #2d3748;
-  border-radius: 0.75rem;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: 1.25rem 1.5rem;
   text-align: center;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
 }
 
 .card-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--color-gray-900);
 }
 
 .card-label {
   font-size: 0.8rem;
-  color: #718096;
+  color: var(--color-text-secondary);
   margin-top: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -283,20 +284,23 @@ function statusBadgeClass(status) {
 .card-bad   { border-color: #e53e3e; }
 
 /* Table */
-.table-section { display: flex; flex-direction: column; gap: 1rem; }
+.table-section { display: flex; flex-direction: column; gap: var(--spacing-3); }
 
 .section-title {
-  font-size: 1.125rem;
+  font-size: var(--font-size-lg);
   font-weight: 600;
   margin: 0;
+  color: var(--color-gray-900);
 }
 
 .health-table {
   width: 100%;
   border-collapse: collapse;
-  background: #1a202c;
-  border-radius: 0.75rem;
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
 }
 
 .health-table th {
@@ -305,25 +309,26 @@ function statusBadgeClass(status) {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #718096;
-  background: #171e2e;
-  border-bottom: 1px solid #2d3748;
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .health-table td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #2d3748;
+  border-bottom: 1px solid var(--color-border);
   font-size: 0.875rem;
+  color: var(--color-gray-900);
 }
 
 .health-table tr:last-child td { border-bottom: none; }
-.health-table tbody tr:hover { background: #2d3748; }
+.health-table tbody tr:hover { background-color: var(--color-gray-50, #f9fafb); }
 
-.row-warn { background: rgba(214, 158, 46, 0.06); }
-.row-bad  { background: rgba(229, 62, 62, 0.06); }
+.row-warn { background-color: rgba(214, 158, 46, 0.06); }
+.row-bad  { background-color: rgba(229, 62, 62, 0.06); }
 
 .niche-name-cell a {
-  color: #667eea;
+  color: var(--color-primary-600, #4f46e5);
   text-decoration: none;
   font-weight: 500;
 }
@@ -338,12 +343,12 @@ function statusBadgeClass(status) {
   font-weight: 500;
 }
 
-.badge-green { background: rgba(56, 161, 105, 0.15); color: #68d391; }
-.badge-gray  { background: rgba(113, 128, 150, 0.15); color: #a0aec0; }
+.badge-green  { background: rgba(56, 161, 105, 0.12); color: #276749; }
+.badge-gray   { background: rgba(113, 128, 150, 0.12); color: #4a5568; }
 .badge-warn,
-.badge-yellow { background: rgba(214, 158, 46, 0.15); color: #f6e05e; }
-.badge-red   { background: rgba(229, 62, 62, 0.15); color: #fc8181; }
-.badge-blue  { background: rgba(102, 126, 234, 0.15); color: #90cdf4; }
+.badge-yellow { background: rgba(214, 158, 46, 0.15); color: #744210; }
+.badge-red    { background: rgba(229, 62, 62, 0.12); color: #9b2c2c; }
+.badge-blue   { background: rgba(102, 126, 234, 0.12); color: #3730a3; }
 
 /* Stale section */
 .stale-section { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -359,20 +364,21 @@ function statusBadgeClass(status) {
 
 .stale-item {
   background: rgba(214, 158, 46, 0.08);
-  border: 1px solid rgba(214, 158, 46, 0.3);
-  border-radius: 0.5rem;
+  border: 1px solid rgba(214, 158, 46, 0.35);
+  border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
+  color: var(--color-gray-900);
 }
 
-.stale-item a { color: #667eea; text-decoration: none; }
+.stale-item a { color: var(--color-primary-600, #4f46e5); text-decoration: none; }
 .stale-item a:hover { text-decoration: underline; }
 
 /* Buttons */
 .btn {
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
   border: none;
@@ -380,10 +386,14 @@ function statusBadgeClass(status) {
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.btn-primary  { background: #667eea; color: white; }
-.btn-secondary { background: #2d3748; color: #e2e8f0; }
+.btn-primary   { background-color: var(--color-primary-500); color: white; }
+.btn-secondary {
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border: 1px solid var(--color-border);
+}
 .btn-primary:not(:disabled):hover  { opacity: 0.85; }
-.btn-secondary:not(:disabled):hover { opacity: 0.85; }
+.btn-secondary:not(:disabled):hover { background-color: var(--color-gray-200, #e2e8f0); }
 
-.empty-state { color: #718096; padding: 2rem; text-align: center; }
+.empty-state { color: var(--color-text-secondary); padding: 2rem; text-align: center; }
 </style>
