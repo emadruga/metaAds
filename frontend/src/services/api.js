@@ -126,5 +126,6 @@ export const authApi = {
 }
 
 export const collectApi = {
-  getHealth: () => api.get('/admin/collection/health')
+  getHealth: () => api.get('/admin/collection/health'),
+  getRuns: (slug, params) => api.get(`/niches/${slug}/collection-runs`, { params })
 }

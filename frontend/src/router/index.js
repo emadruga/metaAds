@@ -58,6 +58,11 @@ const routes = [
         path: 'settings',
         name: 'NicheSettings',
         component: () => import('@/views/NicheSettingsView.vue')
+      },
+      {
+        path: 'history',
+        name: 'NicheHistory',
+        component: () => import('@/views/CollectionHistoryView.vue')
       }
     ]
   },

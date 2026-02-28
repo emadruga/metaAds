@@ -66,6 +66,9 @@
       <router-link :to="`/n/${nicheSlug}/saved`" class="nav-item" active-class="active">
         ⭐ Saved
       </router-link>
+      <router-link :to="`/n/${nicheSlug}/history`" class="nav-item" active-class="active">
+        📋 History
+      </router-link>
     </nav>
 
     <main class="workspace-main">
