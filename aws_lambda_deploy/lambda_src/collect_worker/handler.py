@@ -196,6 +196,9 @@ def handler(event: dict, context) -> None:
                 logger.warning(f"Failed to process ad {raw.get('id', '?')}: {exc}", exc_info=True)
                 # Continue with remaining ads
 
+        # Count total ads in the niche after this run
+        total_ads_after = AdRepo.count_for_niche(niche_id)
+
         # Mark run completed
         CollectionRepo.mark_completed(
             niche_id=niche_id,
@@ -204,6 +207,7 @@ def handler(event: dict, context) -> None:
             ads_found=ads_found,
             ads_new=ads_new,
             ads_updated=ads_updated,
+            total_ads_after=total_ads_after,
         )
         logger.info(
             f"collect_worker completed: run={run_id} "

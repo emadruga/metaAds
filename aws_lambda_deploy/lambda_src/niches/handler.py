@@ -282,6 +282,40 @@ def _trigger_collection(event: dict) -> dict:
     })
 
 
+def _list_collection_runs(event: dict) -> dict:
+    """Return the most recent collection runs for a niche (newest first)."""
+    user_id = _get_user_id(event)
+    slug = _path_params(event).get("slug", "")
+    limit = min(int(_query_params(event).get("limit", 50)), 100)
+
+    niche = NicheRepo.get_by_slug(user_id, slug)
+    if not niche:
+        return _response(404, {"success": False, "error": "Niche not found"})
+
+    runs = CollectionRepo.list_for_niche(niche.id, limit=limit)
+    return _response(200, {
+        "success": True,
+        "data": [
+            {
+                "run_id": r.id,
+                "status": r.status,
+                "keyword": r.keywords_used[0] if r.keywords_used else None,
+                "limit_requested": r.limit_requested,
+                "countries": r.countries,
+                "ads_found": r.ads_found,
+                "ads_new": r.ads_new,
+                "ads_updated": r.ads_updated,
+                "total_ads_after": r.total_ads_after,
+                "error_message": r.error_message,
+                "started_at": r.started_at,
+                "completed_at": r.completed_at,
+            }
+            for r in runs
+        ],
+        "count": len(runs),
+    })
+
+
 def _get_collection_run(event: dict) -> dict:
     """Poll endpoint — returns current status of a collection run."""
     user_id = _get_user_id(event)
@@ -408,6 +442,7 @@ _ROUTES: dict[tuple[str, str], callable] = {
     ("DELETE", "/api/niches/{slug}"):                                       _delete_niche,
     ("GET",    "/api/niches/{slug}/stats"):                                 _get_niche_stats,
     ("POST",   "/api/niches/{slug}/collect"):                               _trigger_collection,
+    ("GET",    "/api/niches/{slug}/collection-runs"):                        _list_collection_runs,
     ("GET",    "/api/niches/{slug}/collection-runs/{run_id}"):              _get_collection_run,
     ("GET",    "/api/admin/collection/health"):                             _get_collection_health,
 }

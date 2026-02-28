@@ -155,6 +155,8 @@ def handler(event: dict, context) -> dict:
                 ads_found=0,
                 ads_new=0,
                 ads_updated=0,
+                limit_requested=50,
+                countries=niche.countries or ["US"],
                 error_message=None,
                 started_at=started_at,
                 completed_at=None,

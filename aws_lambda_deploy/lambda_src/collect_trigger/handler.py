@@ -94,6 +94,7 @@ def handler(event: dict, context) -> dict:
     # Create pending run record
     run_id = generate_uuid()
     started_at = now_iso8601()
+    limit = int(data.get("limit", 50))
     run = CollectionRun(
         id=run_id,
         niche_id=niche.id,
@@ -102,6 +103,8 @@ def handler(event: dict, context) -> dict:
         ads_found=0,
         ads_new=0,
         ads_updated=0,
+        limit_requested=limit,
+        countries=niche.countries or ["US"],
         error_message=None,
         started_at=started_at,
         completed_at=None,
@@ -121,7 +124,7 @@ def handler(event: dict, context) -> dict:
         "run_id": run_id,
         "started_at": started_at,
         "keyword": keyword,
-        "limit": data.get("limit", 50),
+        "limit": limit,
         "countries": niche.countries or ["US"],
         "platforms": niche.platforms or ["instagram"],
     }
