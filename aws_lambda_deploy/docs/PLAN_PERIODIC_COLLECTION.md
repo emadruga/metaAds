@@ -1184,3 +1184,48 @@ This plan provides:
 - ✅ **Cost-effective** implementation (~$13/month)
 
 **Next Steps**: Review plan → Approve → Start Week 1 implementation.
+
+---
+
+## Implementation Status
+
+> Last updated: 2026-02-27
+
+### Phase 0 — User Opt-In ✅ Complete & Deployed
+
+- `auto_collect_enabled` (bool, default `False`) and `auto_collect_interval_hours` (int, default `3`) added to `Niche` model and DynamoDB schema
+- 5-keyword limit enforced on niche create/update (`_create_niche`, `_update_niche` in `lambda_src/niches/handler.py`)
+- `NicheRepo.list_all_with_auto_collect()` added to `lambda_layers/shared/python/app/dynamodb/niche_repo.py`
+- Frontend toggle UI added to the Settings tab of `NicheWorkspaceView.vue`
+
+### Phase 1 — Core Infrastructure ✅ Complete & Deployed
+
+- `last_seen_at` field added to `Ad` model; `AdRepo.create_or_update()` now sets it on every collection
+- `collect_scheduler` Lambda created at `lambda_src/collect_scheduler/handler.py`
+  - Scans only niches with `auto_collect_enabled = True`
+  - Respects per-niche `auto_collect_interval_hours` before triggering
+  - Invokes `collect_trigger` Lambda asynchronously for each eligible niche
+- EventBridge Scheduler Terraform resource (`infra/eventbridge.tf`) fires every 3 hours (`cron(0 */3 * * ? *)`)
+- `collect_scheduler` added to `scripts/package.sh` (was missing from initial packaging)
+- Terraform applied; all infrastructure live in `us-east-1`
+
+### Phase 2 — Auditing & Analytics ✅ Complete & Deployed
+
+- `AdRepo.get_stale_ads(niche_id, hours_threshold)` added to `ad_repo.py`
+  - DynamoDB paginated Query with `FilterExpression`: `is_active=True AND last_seen_at < cutoff AND last_seen_at > ""`
+- `GET /api/admin/collection/health` endpoint added to `lambda_src/niches/handler.py`
+  - Returns per-niche summary: runs/24 h, success rate, hours since last run, stale ad count
+  - API Gateway route added in `infra/api_gateway.tf`
+- `AdminCollectionView.vue` created at `frontend/src/views/AdminCollectionView.vue`
+  - Route: `/admin/collection-health` (requires auth)
+  - 4 summary cards + per-niche health table + stale-niche callout + Refresh button
+- `collectApi.getHealth()` added to `frontend/src/services/api.js`
+- Tests: 55 backend (pytest) + 56 frontend (Vitest) — all passing
+- Frontend deployed to CloudFront: `https://d3ba787xl1d882.cloudfront.net`
+- API live at: `https://f4k5jdd47a.execute-api.us-east-1.amazonaws.com/api`
+
+### Phase 3 — Advanced Features ⬜ Not Started (Optional)
+
+- Adaptive collection frequency based on ad churn rate
+- Meta API call cost tracking per `CollectionRun`
+- Monthly cost report per niche

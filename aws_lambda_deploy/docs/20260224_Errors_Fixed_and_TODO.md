@@ -534,7 +534,74 @@ Set a `next_collection_at` TTL field on each niche; a DynamoDB Stream triggers t
 
 ---
 
-### 7. �� LOW — Point metads.app to CloudFront via Cloudflare
+### 6.5. 🟡 MEDIUM — Collection Health: Nav link, theme consistency, and History tab
+
+#### a) Add "Collection Health" nav link in the Your Niches view
+
+**Description:**
+Add a nav/menu option in the existing sidebar or top navigation bar (visible when the user is in the *Your Niches* section) that navigates to `/admin/collection-health` (`AdminCollectionView`). This gives users a quick path to monitor automated collection status without having to know the URL.
+
+**Suggested Approach:**
+- Locate the navigation component used in the niches area (likely `AppLayout.vue`, `Sidebar.vue`, or equivalent).
+- Add a new link item (e.g. "Collection Health" with a clock or activity icon) that routes to `/admin/collection-health`.
+- Apply the same active-link highlight used by existing nav items.
+
+**Files to update:**
+- `frontend/src/components/` — whichever component renders the sidebar/nav (e.g. `AppSidebar.vue`, `AppLayout.vue`)
+- `frontend/src/router/index.js` — confirm the `/admin/collection-health` route exists and has the correct `requiresAuth` guard
+
+---
+
+#### b) White background & theme consistency in /admin/collection-health
+
+**Description:**
+`AdminCollectionView.vue` currently uses a dark/grey background that does not match the white-card design language used in the rest of the app (e.g. `NicheWorkspaceView`, `SearchView`). Update the page to use a consistent white background with the standard card/container styling.
+
+**Suggested Approach:**
+- Wrap the page content in the same `<div class="page-container">` / `<div class="card">` pattern used by other views.
+- Remove any hardcoded dark background colours on the root element.
+- Ensure summary cards, table, and stale-niche callout use the same shadow/border/colour tokens already defined in the app's CSS or Tailwind config.
+
+**Files to update:**
+- `frontend/src/views/AdminCollectionView.vue` — update root wrapper classes and card styles
+
+---
+
+#### c) Add "History" tab in NicheWorkspaceView showing per-niche collection run log
+
+**Description:**
+Add a dedicated **"History"** tab inside each niche's workspace (`NicheWorkspaceView`) that shows a chronological log of past automated collection runs for that specific niche. Each row should display:
+- `started_at` — formatted timestamp (e.g. "Feb 27 at 03:00 AM")
+- `status` — colour-coded badge: `success` (green), `partial` (yellow), `failed` (red)
+- `ads_found` — total ads returned by Meta API
+- `ads_new` — newly inserted ads
+- `ads_updated` — ads whose `last_seen_at` was refreshed
+- `error_message` — shown only on failed/partial runs (collapsible or tooltip)
+
+**Suggested Approach (backend):**
+1. Add `GET /api/niches/{niche_slug}/collection-runs` endpoint in `lambda_src/niches/handler.py`.
+   - Calls `CollectionRepo.list_for_niche(niche_id, limit=50)` (method already exists).
+   - Returns a JSON array of run objects, newest-first.
+2. Add the API Gateway route in `infra/api_gateway.tf`.
+
+**Suggested Approach (frontend):**
+1. Add `collectApi.getRuns(nicheSlug)` method to `frontend/src/services/api.js`.
+2. Add a `"History"` tab entry to the tab bar in `NicheWorkspaceView.vue`.
+3. Create `frontend/src/components/CollectionHistoryTab.vue` (or inline the panel) that:
+   - Fetches runs on mount (`onMounted`) and on explicit Refresh.
+   - Renders a table/list with the fields listed above.
+   - Shows a loading spinner and empty-state message when there are no runs.
+
+**Files to update / create:**
+- `lambda_src/niches/handler.py` — new `GET /api/niches/{slug}/collection-runs` handler
+- `infra/api_gateway.tf` — new route
+- `frontend/src/services/api.js` — `collectApi.getRuns(slug)`
+- `frontend/src/views/NicheWorkspaceView.vue` — add "History" tab
+- `frontend/src/components/CollectionHistoryTab.vue` — new component
+
+---
+
+### 7. 🟢 LOW — Point metads.app to CloudFront via Cloudflare
 
 **Description:**
 Add a CNAME record in Cloudflare for `metads.app` (and `www.metads.app`) pointing to the CloudFront distribution, and configure the distribution to accept the custom domain with an ACM certificate.
