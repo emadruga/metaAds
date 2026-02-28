@@ -123,6 +123,7 @@ class CollectionRepo:
         ads_found: int,
         ads_new: int,
         ads_updated: int,
+        total_ads_after: int = 0,
     ) -> None:
         CollectionRepo._update_status(
             niche_id,
@@ -133,6 +134,7 @@ class CollectionRepo:
                 "ads_found": ads_found,
                 "ads_new": ads_new,
                 "ads_updated": ads_updated,
+                "total_ads_after": total_ads_after,
                 "completed_at": now_iso8601(),
             },
         )

@@ -574,6 +574,30 @@ class AdRepo:
         return deleted
 
     @staticmethod
+    def count_for_niche(niche_id: str) -> int:
+        """
+        Return the total number of AD# items for a niche using DynamoDB
+        Select=COUNT (no item data transferred, minimal RCU cost).
+        """
+        table = get_table()
+        count = 0
+        query_kwargs: dict = dict(
+            Select="COUNT",
+            KeyConditionExpression=(
+                Key("PK").eq(Ad.pk(niche_id)) &
+                Key("SK").begins_with("AD#")
+            ),
+        )
+        while True:
+            resp = table.query(**query_kwargs)
+            count += resp.get("Count", 0)
+            lek = resp.get("LastEvaluatedKey")
+            if not lek:
+                break
+            query_kwargs["ExclusiveStartKey"] = lek
+        return count
+
+    @staticmethod
     def get_stale_ads(niche_id: str, hours_threshold: int = 12) -> List[Ad]:
         """
         Return active ads whose last_seen_at is older than hours_threshold hours.

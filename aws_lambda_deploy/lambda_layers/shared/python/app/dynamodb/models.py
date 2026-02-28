@@ -551,6 +551,9 @@ class CollectionRun:
     ads_found: int = 0
     ads_new: int = 0
     ads_updated: int = 0
+    total_ads_after: int = 0
+    limit_requested: int = 0
+    countries: List[str] = field(default_factory=lambda: ["US"])
     error_message: Optional[str] = None
     started_at: str = ""
     completed_at: Optional[str] = None
@@ -577,6 +580,9 @@ class CollectionRun:
             "ads_found": self.ads_found,
             "ads_new": self.ads_new,
             "ads_updated": self.ads_updated,
+            "total_ads_after": self.total_ads_after,
+            "limit_requested": self.limit_requested,
+            "countries": json.dumps(self.countries),
             "error_message": self.error_message or "",
             "started_at": self.started_at,
             "completed_at": self.completed_at or "",
@@ -592,6 +598,9 @@ class CollectionRun:
             ads_found=int(item.get("ads_found") or 0),
             ads_new=int(item.get("ads_new") or 0),
             ads_updated=int(item.get("ads_updated") or 0),
+            total_ads_after=int(item.get("total_ads_after") or 0),
+            limit_requested=int(item.get("limit_requested") or 0),
+            countries=_loads_list(item.get("countries", '["US"]')),
             error_message=item.get("error_message") or None,
             started_at=item.get("started_at", ""),
             completed_at=item.get("completed_at") or None,
