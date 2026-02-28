@@ -64,11 +64,18 @@ def _should_collect(niche, latest_run) -> bool:
         )
         return False
 
+    # Use started_at (not completed_at) for the interval calculation.
+    # The worker completes 1-2 min after the EventBridge fire, so
+    # completed_at + interval pushes due_at just past the next fire,
+    # causing every other 3h tick to be skipped (effective 6h cadence).
+    # started_at is set at fire time, so due_at aligns exactly with
+    # the next EventBridge tick.
+    ref_ts_str = latest_run.started_at or completed_at
     try:
-        last_ts = datetime.fromisoformat(completed_at.replace("Z", "+00:00"))
+        last_ts = datetime.fromisoformat(ref_ts_str.replace("Z", "+00:00"))
     except (ValueError, AttributeError):
         logger.warning(
-            f"Could not parse completed_at={completed_at!r} for niche {niche.id}; "
+            f"Could not parse started_at={ref_ts_str!r} for niche {niche.id}; "
             "scheduling collection anyway."
         )
         return True
