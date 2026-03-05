@@ -49,17 +49,52 @@ resource "aws_iam_role_policy" "eventbridge_scheduler_invoke" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "InvokeCollectScheduler"
+        Sid    = "InvokeCollectLambdas"
         Effect = "Allow"
-        Action = [
-          "lambda:InvokeFunction"
-        ]
-        Resource = [
-          aws_lambda_function.collect_scheduler.arn
-        ]
+        Action = ["lambda:InvokeFunction"]
+        Resource = concat(
+          [aws_lambda_function.collect_scheduler.arn],
+          var.alarm_email != "" ? [aws_lambda_function.collect_daily_reporter[0].arn] : []
+        )
       }
     ]
   })
+}
+
+# -----------------------------------------------------------------------------
+# EventBridge Scheduler — runs every 3 hours
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# EventBridge Scheduler — daily collection summary report (23:00 UTC = 20:00 BRT)
+# Only created when alarm_email is set (same condition as the SNS topic and Lambda).
+# -----------------------------------------------------------------------------
+
+resource "aws_scheduler_schedule" "collect_daily_reporter" {
+  count       = var.alarm_email != "" ? 1 : 0
+  name        = "${local.name_prefix}-collect-daily-reporter"
+  description = "Daily collection summary email — fires at 23:00 UTC (20:00 BRT)"
+  group_name  = "default"
+
+  # No jitter for the daily report — we want it at exactly 23:00 UTC.
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression          = "cron(0 23 * * ? *)"
+  schedule_expression_timezone = "UTC"
+
+  target {
+    arn      = aws_lambda_function.collect_daily_reporter[0].arn
+    role_arn = aws_iam_role.eventbridge_scheduler.arn
+
+    input = "{}"
+
+    retry_policy {
+      maximum_event_age_in_seconds = 300
+      maximum_retry_attempts       = 1
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------

@@ -22,9 +22,17 @@ api_throttle_burst = 100
 api_throttle_rate  = 50
 
 # CloudFront
-custom_domain        = ""
+custom_domain          = "metads.app"
+acm_certificate_arn    = "arn:aws:acm:us-east-1:645069181643:certificate/d89a893a-5230-433f-bbc8-f028c64dbe63"
 cloudfront_price_class = "PriceClass_100"
+
+# CORS — allow both CloudFront origin and custom domain
+cors_allow_origins = [
+  "https://d3ba787xl1d882.cloudfront.net",
+  "https://metads.app",
+  "https://www.metads.app"
+]
 
 # Monitoring
 cloudwatch_log_retention_days = 7
-alarm_email                   = ""
+alarm_email                   = "emadruga@gmail.com"

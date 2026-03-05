@@ -273,7 +273,8 @@ resource "aws_lambda_function" "collect_worker" {
     variables = merge(local.common_env, {
       # Override SECRETS_NAME for the worker: it needs the Meta API secret, not Clerk.
       # collect_worker/handler.py reads os.environ["SECRETS_NAME"] for boto3 GetSecretValue.
-      SECRETS_NAME = aws_secretsmanager_secret.meta_api.name
+      SECRETS_NAME        = aws_secretsmanager_secret.meta_api.name
+      SNS_ALARM_TOPIC_ARN = var.alarm_email != "" ? aws_sns_topic.alarms[0].arn : ""
     })
   }
 
@@ -320,6 +321,44 @@ resource "aws_lambda_function" "collect_scheduler" {
 
   tags = {
     Name = "${local.name_prefix}-collect-scheduler"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Daily Reporter Lambda
+# Triggered daily at 23:00 UTC (= 20:00 BRT) by EventBridge Scheduler.
+# Sends a daily summary email to the alarm_email via the SNS alarms topic.
+# Only created when alarm_email is set (same condition as the SNS topic).
+# -----------------------------------------------------------------------------
+
+resource "aws_lambda_function" "collect_daily_reporter" {
+  count         = var.alarm_email != "" ? 1 : 0
+  function_name = "${local.name_prefix}-collect-daily-reporter"
+  description   = "Daily collection summary email reporter (23:00 UTC = 20:00 BRT)"
+  role          = aws_iam_role.lambda_collector.arn
+  runtime       = var.lambda_runtime
+  handler       = "handler.handler"
+  timeout       = 120
+  memory_size   = 256
+
+  filename         = "${local.stubs_path}/collect_daily_reporter.zip"
+  source_code_hash = filebase64sha256("${local.stubs_path}/collect_daily_reporter.zip")
+
+  layers = [aws_lambda_layer_version.shared.arn]
+
+  environment {
+    variables = merge(local.common_env, {
+      SNS_ALARM_TOPIC_ARN = aws_sns_topic.alarms[0].arn
+    })
+  }
+
+  depends_on = [
+    aws_cloudwatch_log_group.lambda_collect_daily_reporter,
+    aws_iam_role_policy_attachment.lambda_collector_logs
+  ]
+
+  tags = {
+    Name = "${local.name_prefix}-collect-daily-reporter"
   }
 }
 

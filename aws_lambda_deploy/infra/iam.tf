@@ -215,6 +215,25 @@ resource "aws_iam_role_policy" "lambda_collector_dlq" {
   })
 }
 
+# SNS publish permission for Collector (rate-limit alerts from collect_worker)
+resource "aws_iam_role_policy" "lambda_collector_sns" {
+  count = var.alarm_email != "" ? 1 : 0
+  name  = "${local.name_prefix}-lambda-collector-sns"
+  role  = aws_iam_role.lambda_collector.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "PublishRateLimitAlerts"
+        Effect = "Allow"
+        Action = ["sns:Publish"]
+        Resource = [aws_sns_topic.alarms[0].arn]
+      }
+    ]
+  })
+}
+
 # CloudWatch Logs for Collector
 resource "aws_iam_role_policy_attachment" "lambda_collector_logs" {
   role       = aws_iam_role.lambda_collector.name
