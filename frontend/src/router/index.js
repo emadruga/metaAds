@@ -67,12 +67,12 @@ const routes = [
     ]
   },
 
-  // Admin routes
+  // Admin routes (requires role: "admin" in Clerk publicMetadata)
   {
     path: '/admin/collection-health',
     name: 'AdminCollectionHealth',
     component: () => import('@/views/AdminCollectionView.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
 
   // Catch-all redirect
@@ -122,6 +122,15 @@ router.beforeEach(async (to, _from, next) => {
         name: 'SignIn',
         query: { redirect: to.fullPath }
       })
+    } else if (to.meta.requiresAdmin) {
+      // Admin-only route: check role from Clerk session claims
+      const { sessionClaims } = useAuth()
+      const role = sessionClaims.value?.metadata?.role
+      if (role !== 'admin') {
+        next({ name: 'NicheSelector' })
+        return
+      }
+      next()
     } else if (
       !requiresAuth &&
       isSignedIn.value &&
