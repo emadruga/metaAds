@@ -48,8 +48,9 @@ export async function getSessionToken() {
   }
 
   try {
-    // getToken is a ref containing a function, so we call .value()
-    const token = await authInstance.getToken.value()
+    // Request the "Default" JWT template so custom claims (metadata.role) are included.
+    // getToken() without a template returns the raw session token which lacks custom claims.
+    const token = await authInstance.getToken.value({ template: 'Default' })
     console.log('[ClerkClient] Token retrieved:', token ? 'success' : 'null')
     return token
   } catch (error) {
