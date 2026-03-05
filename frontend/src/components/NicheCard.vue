@@ -4,32 +4,30 @@
     <div class="niche-info">
       <h3 class="niche-name">{{ niche.name }}</h3>
       <p class="niche-description" v-if="niche.description">{{ niche.description }}</p>
-      <div class="niche-footer">
-        <div class="niche-stats">
-          <span class="stat">
-            <span class="stat-value">{{ niche.stats?.total_ads || 0 }}</span>
-            <span class="stat-label">ads</span>
+      <div class="niche-stats">
+        <span class="stat">
+          <span class="stat-value">{{ niche.stats?.total_ads || 0 }}</span>
+          <span class="stat-label">ads</span>
+        </span>
+        <span class="stat">
+          <span class="stat-value">{{ niche.stats?.saved_ads || 0 }}</span>
+          <span class="stat-label">saved</span>
+        </span>
+      </div>
+      <div class="auto-collect-toggle" @click.stop>
+        <span class="toggle-label">Auto-Collect</span>
+        <label class="toggle-switch" :class="{ updating: isUpdating }">
+          <input
+            type="checkbox"
+            :checked="niche.auto_collect_enabled || false"
+            :disabled="isUpdating"
+            @change="handleToggle"
+          />
+          <span class="slider">
+            <span class="slider-off">Off</span>
+            <span class="slider-on">On</span>
           </span>
-          <span class="stat">
-            <span class="stat-value">{{ niche.stats?.saved_ads || 0 }}</span>
-            <span class="stat-label">saved</span>
-          </span>
-        </div>
-        <div class="auto-collect-toggle" @click.stop>
-          <span class="toggle-label">Auto-Collect</span>
-          <label class="toggle-switch" :class="{ updating: isUpdating }">
-            <input
-              type="checkbox"
-              :checked="niche.auto_collect_enabled || false"
-              :disabled="isUpdating"
-              @change="handleToggle"
-            />
-            <span class="slider">
-              <span class="slider-off">Off</span>
-              <span class="slider-on">On</span>
-            </span>
-          </label>
-        </div>
+        </label>
       </div>
     </div>
     <div class="niche-arrow">→</div>
@@ -128,16 +126,10 @@ async function handleToggle(event) {
     text-overflow: ellipsis;
   }
 
-  .niche-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-3);
-  }
-
   .niche-stats {
     display: flex;
     gap: var(--spacing-4);
+    margin-bottom: var(--spacing-2);
   }
 
   .stat {
@@ -162,7 +154,8 @@ async function handleToggle(event) {
     display: flex;
     align-items: center;
     gap: var(--spacing-2);
-    flex-shrink: 0;
+    padding-top: var(--spacing-2);
+    border-top: 1px solid var(--color-border);
   }
 
   .toggle-label {
