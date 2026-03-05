@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from datetime import datetime, timezone, timedelta
 
 import boto3
@@ -143,7 +144,7 @@ def handler(event: dict, context) -> dict:
             f"({len(niche.keywords)} keyword(s))."
         )
 
-        for keyword in niche.keywords:
+        for kw_index, keyword in enumerate(niche.keywords):
             run_id = generate_uuid()
             started_at = now_iso8601()
 
@@ -189,6 +190,14 @@ def handler(event: dict, context) -> dict:
                 CollectionRepo.mark_error(
                     niche.id, run_id, started_at, f"Invoke failed: {exc}"
                 )
+
+            # Stagger keyword workers within a niche to avoid bursting
+            # the Meta API rate limit from simultaneous invocations.
+            if kw_index < len(niche.keywords) - 1:
+                time.sleep(2)
+
+        # Stagger between niches (longer gap so workers don't overlap)
+        time.sleep(5)
 
     summary = {
         "niches_found": len(niches),

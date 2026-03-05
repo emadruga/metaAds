@@ -149,12 +149,16 @@ def handler(event: dict, context) -> dict:
             logger.warning("JWT missing 'sub' claim")
             return _deny()
 
-        logger.info(f"Authorizer ALLOW for user={user_id}")
+        metadata = payload.get("metadata", {}) or {}
+        role = metadata.get("role", "user")
+
+        logger.info(f"Authorizer ALLOW for user={user_id} role={role}")
         return {
             "isAuthorized": True,
             "context": {
                 "user_id": user_id,
                 "session_id": payload.get("sid", ""),
+                "role": role,
             },
         }
 

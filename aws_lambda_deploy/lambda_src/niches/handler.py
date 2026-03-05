@@ -29,6 +29,7 @@ import boto3
 from app.dynamodb.niche_repo import NicheRepo
 from app.dynamodb.collection_repo import CollectionRepo
 from app.dynamodb.ad_repo import AdRepo
+from app.dynamodb.rate_limit_repo import RateLimitRepo
 from app.dynamodb.models import Niche, CollectionRun
 from app.utils.ids import generate_uuid, now_iso8601
 
@@ -53,6 +54,15 @@ def _get_user_id(event: dict) -> str | None:
              .get("authorizer", {})
              .get("lambda", {})
              .get("user_id")
+    )
+
+
+def _get_role(event: dict) -> str:
+    return (
+        event.get("requestContext", {})
+             .get("authorizer", {})
+             .get("lambda", {})
+             .get("role", "user")
     )
 
 
@@ -352,7 +362,12 @@ def _get_collection_health(event: dict) -> dict:
       - runs in the last 24 h and their success rate
       - hours elapsed since the most recent run
       - number of active ads that haven't been seen in the last 24 h (stale)
+
+    Admin-only endpoint.
     """
+    if _get_role(event) != "admin":
+        return _response(403, {"success": False, "error": "Admin access required"})
+
     from datetime import datetime, timezone, timedelta
 
     user_id = _get_user_id(event)
@@ -430,6 +445,68 @@ def _get_collection_health(event: dict) -> dict:
     })
 
 
+def _get_rate_limit_history(event: dict) -> dict:
+    """
+    GET /api/admin/rate-limit/history?hours=48
+
+    Returns the hourly Meta API request counts for the last *hours* hours.
+    Includes the current hour's usage so the alert banner can read it.
+    Admin-only endpoint.
+    """
+    if _get_role(event) != "admin":
+        return _response(403, {"success": False, "error": "Admin access required"})
+
+    hours = min(int(_query_params(event).get("hours", 48)), 168)  # max 1 week
+    windows = RateLimitRepo.list_recent(hours=hours)
+    return _response(200, {
+        "success": True,
+        "data": windows,
+        "count": len(windows),
+        "limit": 200,
+        "alert_threshold": 160,
+    })
+
+
+def _get_global_collection_runs(event: dict) -> dict:
+    """
+    GET /api/admin/collection-runs?hours=24&limit=100
+
+    Returns all collection runs across all niches/users in the last *hours* hours.
+    Sorted newest-first. Admin-only endpoint.
+    """
+    if _get_role(event) != "admin":
+        return _response(403, {"success": False, "error": "Admin access required"})
+
+    params = _query_params(event)
+    hours = min(int(params.get("hours", 24)), 168)   # max 1 week
+    limit = min(int(params.get("limit", 100)), 500)
+
+    runs = CollectionRepo.list_recent_global(hours=hours, limit=limit)
+    return _response(200, {
+        "success": True,
+        "data": [
+            {
+                "run_id":         r.id,
+                "niche_id":       r.niche_id,
+                "status":         r.status,
+                "keyword":        r.keywords_used[0] if r.keywords_used else None,
+                "countries":      r.countries,
+                "limit_requested": r.limit_requested,
+                "ads_found":      r.ads_found,
+                "ads_new":        r.ads_new,
+                "ads_updated":    r.ads_updated,
+                "total_ads_after": r.total_ads_after,
+                "api_requests_made": r.api_requests_made,
+                "error_message":  r.error_message,
+                "started_at":     r.started_at,
+                "completed_at":   r.completed_at,
+            }
+            for r in runs
+        ],
+        "count": len(runs),
+    })
+
+
 # ---------------------------------------------------------------------------
 # Lambda entry point
 # ---------------------------------------------------------------------------
@@ -445,6 +522,8 @@ _ROUTES: dict[tuple[str, str], callable] = {
     ("GET",    "/api/niches/{slug}/collection-runs"):                        _list_collection_runs,
     ("GET",    "/api/niches/{slug}/collection-runs/{run_id}"):              _get_collection_run,
     ("GET",    "/api/admin/collection/health"):                             _get_collection_health,
+    ("GET",    "/api/admin/rate-limit/history"):                            _get_rate_limit_history,
+    ("GET",    "/api/admin/collection-runs"):                               _get_global_collection_runs,
 }
 
 

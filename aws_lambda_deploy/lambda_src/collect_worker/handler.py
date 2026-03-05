@@ -37,10 +37,12 @@ import os
 import time
 
 import boto3
+from datetime import datetime, timezone
 
 from app.dynamodb.ad_repo import AdRepo
 from app.dynamodb.collection_repo import CollectionRepo
 from app.dynamodb.page_repo import PageRepo
+from app.dynamodb.rate_limit_repo import RateLimitRepo
 from app.dynamodb.models import Ad, Page
 from app.utils.ids import generate_uuid, now_iso8601
 
@@ -84,6 +86,39 @@ def _get_parser():
 
 
 # ---------------------------------------------------------------------------
+# Rate-limit alert helper
+# ---------------------------------------------------------------------------
+
+_RATE_LIMIT_ALERT_THRESHOLD = 160   # 80% of 200 req/hour
+_RATE_LIMIT_MAX = 200
+
+def _send_rate_limit_alert(new_total: int, hour_str: str) -> None:
+    """Publish a rate-limit warning to SNS (best-effort)."""
+    topic_arn = os.environ.get("SNS_ALARM_TOPIC_ARN")
+    if not topic_arn:
+        logger.warning("SNS_ALARM_TOPIC_ARN not set; skipping rate-limit alert")
+        return
+    try:
+        region = os.environ.get("AWS_REGION", "us-east-1")
+        sns = boto3.client("sns", region_name=region)
+        message = (
+            f"MetaAds Rate Limit Warning\n\n"
+            f"Hour: {hour_str} UTC\n"
+            f"Requests used: {new_total} / {_RATE_LIMIT_MAX} (80% threshold reached)\n\n"
+            f"Remaining capacity: {_RATE_LIMIT_MAX - new_total} requests\n"
+            f"If this pace continues you may hit the hard limit before the hour resets."
+        )
+        sns.publish(
+            TopicArn=topic_arn,
+            Subject=f"[MetaAds] Rate limit at {new_total}/{_RATE_LIMIT_MAX} — hour {hour_str}",
+            Message=message,
+        )
+        logger.info(f"Rate-limit alert published to SNS: {new_total}/{_RATE_LIMIT_MAX} for hour {hour_str}")
+    except Exception as exc:
+        logger.error(f"Failed to publish SNS rate-limit alert: {exc}")
+
+
+# ---------------------------------------------------------------------------
 # Lambda entry point
 # ---------------------------------------------------------------------------
 
@@ -112,9 +147,10 @@ def handler(event: dict, context) -> None:
         logger.error(f"Failed to mark run as running: {exc}")
         return
 
-    ads_found   = 0
-    ads_new     = 0
-    ads_updated = 0
+    ads_found        = 0
+    ads_new          = 0
+    ads_updated      = 0
+    api_requests_made = 0
 
     try:
         # Fetch Meta API token
@@ -123,14 +159,14 @@ def handler(event: dict, context) -> None:
         parser = _get_parser()
 
         logger.info(f"Calling Meta API: search_terms={keyword!r} countries={countries} platforms={platforms}")
-        raw_ads = api.search_ads(
+        raw_ads, api_requests_made = api.search_ads(
             search_terms=keyword,
             countries=countries,
             platforms=platforms,
             limit=limit,
         )
         ads_found = len(raw_ads)
-        logger.info(f"Meta API returned {ads_found} ads")
+        logger.info(f"Meta API returned {ads_found} ads (requests_made={api_requests_made})")
 
         # Process each raw ad
         for raw in raw_ads:
@@ -208,11 +244,28 @@ def handler(event: dict, context) -> None:
             ads_new=ads_new,
             ads_updated=ads_updated,
             total_ads_after=total_ads_after,
+            api_requests_made=api_requests_made,
         )
         logger.info(
             f"collect_worker completed: run={run_id} "
-            f"found={ads_found} new={ads_new} updated={ads_updated}"
+            f"found={ads_found} new={ads_new} updated={ads_updated} "
+            f"api_requests={api_requests_made}"
         )
+
+        # Update hourly rate-limit counter and fire alert if threshold reached
+        if api_requests_made > 0:
+            try:
+                hour_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H")
+                new_total = RateLimitRepo.increment(hour_str, api_requests_made)
+                logger.info(f"Rate-limit counter: {new_total}/{_RATE_LIMIT_MAX} for hour {hour_str}")
+
+                if new_total >= _RATE_LIMIT_ALERT_THRESHOLD:
+                    window = RateLimitRepo.get(hour_str)
+                    if window and not window.get("alert_sent"):
+                        RateLimitRepo.mark_alert_sent(hour_str)
+                        _send_rate_limit_alert(new_total, hour_str)
+            except Exception as exc:
+                logger.error(f"Failed to update rate-limit counter: {exc}")
 
     except Exception as exc:
         logger.error(f"collect_worker fatal error: {exc}", exc_info=True)
