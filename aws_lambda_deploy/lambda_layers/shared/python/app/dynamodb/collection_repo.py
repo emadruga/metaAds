@@ -21,6 +21,12 @@ from app.dynamodb.models import CollectionRun
 from app.utils.ids import now_iso8601
 
 
+def _cutoff_iso(hours: int) -> str:
+    """Return ISO8601 timestamp *hours* ago (UTC)."""
+    from datetime import datetime, timezone, timedelta
+    return (datetime.now(tz=timezone.utc) - timedelta(hours=hours)).isoformat()
+
+
 class CollectionRepo:
 
     # ------------------------------------------------------------------
@@ -65,6 +71,43 @@ class CollectionRepo:
         """Return the single most recent CollectionRun for a niche, or None."""
         runs = CollectionRepo.list_for_niche(niche_id, limit=1)
         return runs[0] if runs else None
+
+    @staticmethod
+    def list_recent_global(hours: int = 24, limit: int = 100) -> List[CollectionRun]:
+        """
+        Return the most recent CollectionRuns across ALL niches/users.
+        Uses a DynamoDB Scan with FilterExpression — intended for admin use only.
+        Results are sorted newest-first by started_at.
+        """
+        table = get_table()
+        cutoff = _cutoff_iso(hours)
+
+        filter_expr = (
+            Attr("entity_type").eq("COLLECTION_RUN") &
+            Attr("started_at").gte(cutoff)
+        )
+
+        runs: List[CollectionRun] = []
+        scan_kwargs = {
+            "FilterExpression": filter_expr,
+            "Limit": 1000,   # DynamoDB page size; we filter client-side down to *limit*
+        }
+
+        while True:
+            resp = table.scan(**scan_kwargs)
+            for item in resp.get("Items", []):
+                try:
+                    runs.append(CollectionRun.from_item(item))
+                except Exception:
+                    pass
+
+            if "LastEvaluatedKey" not in resp or len(runs) >= limit * 5:
+                break
+            scan_kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
+        # Sort newest-first and cap
+        runs.sort(key=lambda r: r.started_at or "", reverse=True)
+        return runs[:limit]
 
     # ------------------------------------------------------------------
     # Write
@@ -124,6 +167,7 @@ class CollectionRepo:
         ads_new: int,
         ads_updated: int,
         total_ads_after: int = 0,
+        api_requests_made: int = 0,
     ) -> None:
         CollectionRepo._update_status(
             niche_id,
@@ -135,6 +179,7 @@ class CollectionRepo:
                 "ads_new": ads_new,
                 "ads_updated": ads_updated,
                 "total_ads_after": total_ads_after,
+                "api_requests_made": api_requests_made,
                 "completed_at": now_iso8601(),
             },
         )

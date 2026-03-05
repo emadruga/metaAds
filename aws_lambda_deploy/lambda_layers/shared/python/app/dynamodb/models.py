@@ -554,6 +554,7 @@ class CollectionRun:
     total_ads_after: int = 0
     limit_requested: int = 0
     countries: List[str] = field(default_factory=lambda: ["US"])
+    api_requests_made: int = 0       # HTTP requests made to Meta API (including pagination)
     error_message: Optional[str] = None
     started_at: str = ""
     completed_at: Optional[str] = None
@@ -583,6 +584,7 @@ class CollectionRun:
             "total_ads_after": self.total_ads_after,
             "limit_requested": self.limit_requested,
             "countries": json.dumps(self.countries),
+            "api_requests_made": self.api_requests_made,
             "error_message": self.error_message or "",
             "started_at": self.started_at,
             "completed_at": self.completed_at or "",
@@ -601,6 +603,7 @@ class CollectionRun:
             total_ads_after=int(item.get("total_ads_after") or 0),
             limit_requested=int(item.get("limit_requested") or 0),
             countries=_loads_list(item.get("countries", '["US"]')),
+            api_requests_made=int(item.get("api_requests_made") or 0),
             error_message=item.get("error_message") or None,
             started_at=item.get("started_at", ""),
             completed_at=item.get("completed_at") or None,

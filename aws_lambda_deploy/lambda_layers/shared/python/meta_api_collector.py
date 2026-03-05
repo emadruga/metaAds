@@ -7,9 +7,10 @@ Client for the Meta Ad Library API that handles:
 - Pagination
 - Rate limiting
 """
+import re
 import requests
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 
 class MetaAdLibraryAPI:
@@ -31,7 +32,7 @@ class MetaAdLibraryAPI:
         platforms: List[str] = ['instagram'],
         fields: List[str] = None,
         limit: int = 100
-    ) -> List[Dict]:
+    ) -> Tuple[List[Dict], int]:
         """
         Search ads in the Ad Library.
 
@@ -44,7 +45,7 @@ class MetaAdLibraryAPI:
             limit: Maximum ads to return
 
         Returns:
-            List of dictionaries with ad data
+            Tuple of (list of ad dicts, number of HTTP requests made)
         """
 
         if fields is None:
@@ -76,6 +77,7 @@ class MetaAdLibraryAPI:
             params['publisher_platforms'] = ','.join(platforms)
 
         all_ads = []
+        requests_made = 0
         url = f"{self.base_url}/ads_archive"
         max_retries = 3
         retry_delay = 2  # Start with 2 seconds
@@ -87,6 +89,7 @@ class MetaAdLibraryAPI:
             for attempt in range(max_retries):
                 try:
                     response = requests.get(url, params=params, timeout=30)
+                    requests_made += 1
                     response.raise_for_status()
                     data = response.json()
 
@@ -104,32 +107,46 @@ class MetaAdLibraryAPI:
                     break
 
                 except requests.exceptions.HTTPError as e:
-                    # Check if it's a 500 error that we should retry
                     if e.response is not None and e.response.status_code == 500:
                         error_body = e.response.text[:500] if e.response.text else 'No error body'
 
                         if attempt < max_retries - 1:
-                            # Retry with exponential backoff
                             wait_time = retry_delay * (2 ** attempt)
                             print(f"Meta API 500 error (attempt {attempt + 1}/{max_retries}). Retrying in {wait_time}s... | Body: {error_body}")
                             time.sleep(wait_time)
                             continue
                         else:
-                            # Final attempt failed - raise user-friendly error
                             print(f"Meta API 500 error after {max_retries} attempts | Body: {error_body}")
                             raise Exception("Meta Ad Library is temporarily unavailable. Please try again in a few minutes.")
+                    elif e.response is not None and e.response.status_code == 400:
+                        # Check for rate limit error (#613)
+                        try:
+                            body = e.response.json()
+                            code = body.get("error", {}).get("code")
+                            if code == 613:
+                                print(f"Meta API rate limit exceeded (error #613). requests_made so far: {requests_made}")
+                                raise Exception("Meta API rate limit exceeded. Too many requests this hour. Try again later.")
+                        except Exception as inner:
+                            if "rate limit" in str(inner).lower():
+                                raise
+                        safe_url = re.sub(r'access_token=[^&\s]+', 'access_token=REDACTED', str(e))
+                        print(f"Meta API 400 error: {safe_url[:300]}")
+                        raise Exception("Meta API error: 400")
                     else:
-                        # Non-500 error - don't retry, just log and raise
-                        if hasattr(e, 'response') and e.response is not None:
-                            print(f"Request error: Status {e.response.status_code} | Body: {e.response.text[:500]}")
-                        raise Exception(f"Meta API error: {e.response.status_code if e.response else 'Unknown'}")
+                        status = e.response.status_code if e.response is not None else "unknown"
+                        safe_url = re.sub(r'access_token=[^&\s]+', 'access_token=REDACTED', str(e))
+                        print(f"Meta API HTTP error {status}: {safe_url[:300]}")
+                        raise Exception(f"Meta API error: {status}")
 
                 except requests.exceptions.RequestException as e:
-                    # Network error or timeout - log and raise user-friendly error
                     print(f"Network error: {type(e).__name__} - {str(e)[:200]}")
                     raise Exception("Network error connecting to Meta Ad Library. Please check your connection and try again.")
 
-        return all_ads[:limit]
+            else:
+                # Inner for-loop exhausted without break (all retries failed via continue)
+                break
+
+        return all_ads[:limit], requests_made
 
     def get_ads_by_page(
         self,
