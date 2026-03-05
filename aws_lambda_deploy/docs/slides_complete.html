@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MetaAds on AWS — Complete Presentation (Slides 1–36)</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reset.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/theme/black.min.css" />
+  <style>
+    :root {
+      --aws-orange: #FF9900;
+      --aws-blue:   #232F3E;
+      --aws-light:  #FAFAFA;
+      --aws-teal:   #1A9C3E;
+      --aws-red:    #D13212;
+    }
+
+    .reveal { font-family: "Segoe UI", Arial, sans-serif; }
+
+    /* ── Slide type helpers ─────────────────────────────── */
+    .cover-slide      { background: linear-gradient(135deg, #232F3E 0%, #16202E 100%); }
+    .part-divider     { background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%); }
+    .what-is-it       { background: linear-gradient(160deg, #0F2027 0%, #203A43 50%, #2C5364 100%); }
+    .features-slide   { background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%); }
+    .cost-slide       { background: linear-gradient(160deg, #0d0d0d 0%, #1a1a2e 100%); }
+
+    /* ── Typography ─────────────────────────────────────── */
+    .reveal h1 { color: var(--aws-orange); font-size: 2.2em; letter-spacing: -0.02em; }
+    .reveal h2 { color: var(--aws-orange); font-size: 1.5em; margin-bottom: 0.4em; }
+    .reveal h3 { color: #aad4f5; font-size: 1.1em; font-weight: 400; margin-top: 0; }
+    .reveal p, .reveal li { color: #d4d4d4; font-size: 0.82em; }
+    .reveal strong { color: var(--aws-orange); }
+    .reveal code { color: #FFD580; background: rgba(255,255,255,0.08); padding: 0 4px; border-radius: 3px; font-size: 0.85em; }
+
+    /* ── Pill badge ─────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      background: var(--aws-orange);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.7em;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    /* ── Tables ─────────────────────────────────────────── */
+    .reveal table {
+      font-size: 0.72em;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.6em;
+    }
+    .reveal table thead th {
+      background: rgba(255, 153, 0, 0.18);
+      color: var(--aws-orange);
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 2px solid var(--aws-orange);
+    }
+    .reveal table tbody td {
+      padding: 5px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      color: #d4d4d4;
+      vertical-align: top;
+    }
+    .reveal table tbody tr:hover td { background: rgba(255,255,255,0.04); }
+
+    /* ── Code blocks ────────────────────────────────────── */
+    .reveal pre {
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.6em;
+      line-height: 1.4;
+      margin: 0.5em 0;
+      white-space: pre;
+      text-align: left;
+      box-shadow: none;
+    }
+    .reveal pre code { background: transparent; padding: 0; color: #abb2bf; }
+
+    /* ── Info boxes ─────────────────────────────────────── */
+    .info-box {
+      background: rgba(255,153,0,0.08);
+      border-left: 4px solid var(--aws-orange);
+      border-radius: 0 6px 6px 0;
+      padding: 8px 14px;
+      margin: 0.5em 0;
+      font-size: 0.76em;
+      color: #c9c9c9;
+      text-align: left;
+    }
+
+    .tip-box {
+      background: rgba(26,156,62,0.12);
+      border-left: 4px solid var(--aws-teal);
+      border-radius: 0 6px 6px 0;
+      padding: 8px 14px;
+      margin: 0.5em 0;
+      font-size: 0.76em;
+      color: #c9c9c9;
+      text-align: left;
+    }
+
+    /* ── Cover specifics ────────────────────────────────── */
+    .cover-title { font-size: 3em !important; letter-spacing: -0.03em; }
+    .cover-sub   { font-size: 1.3em !important; color: #aad4f5 !important; }
+
+    .stack-pill {
+      display: inline-block;
+      background: rgba(255,153,0,0.15);
+      border: 1px solid rgba(255,153,0,0.4);
+      color: var(--aws-orange);
+      font-size: 0.72em;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin: 3px 4px;
+    }
+
+    /* ── Part divider ───────────────────────────────────── */
+    .part-number { font-size: 0.85em !important; color: #aad4f5 !important; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.2em; }
+    .part-title  { font-size: 2.8em !important; margin: 0; }
+
+    /* ── Architecture diagram box ───────────────────────── */
+    .arch-diagram {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,153,0,0.3);
+      border-radius: 8px;
+      padding: 10px 18px;
+      text-align: left;
+      font-family: "Courier New", monospace;
+      font-size: 0.56em;
+      line-height: 1.55;
+      color: #aad4f5;
+      margin-top: 0.5em;
+    }
+
+    /* ── Two-column layout ──────────────────────────────── */
+    .cols { display: flex; gap: 20px; align-items: flex-start; }
+    .cols > * { flex: 1; }
+
+    /* ── Progress indicator ─────────────────────────────── */
+    .slide-num {
+      position: absolute;
+      bottom: 12px;
+      right: 18px;
+      font-size: 0.55em;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ── Cost highlight ─────────────────────────────────── */
+    .cost-total {
+      font-size: 1.6em;
+      color: var(--aws-teal);
+      font-weight: 700;
+      margin: 0.3em 0;
+    }
+    .cost-free {
+      color: var(--aws-teal);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 1 — Cover
+═══════════════════════════════════════════════════════ -->
+<section class="cover-slide" data-transition="zoom">
+  <h1 class="cover-title">MetaAds on AWS</h1>
+  <h2 class="cover-sub">Serverless Architecture in Production</h2>
+  <hr style="border-color:rgba(255,153,0,0.3);margin:1.2em auto;width:60%"/>
+  <p style="font-size:0.85em;color:#aad4f5;margin-bottom:0.8em;"><strong>Stack summary</strong></p>
+  <div>
+    <span class="stack-pill">100% Serverless</span>
+    <span class="stack-pill">Terraform v1.5+</span>
+    <span class="stack-pill">us-east-1</span>
+    <span class="stack-pill">No EC2 / No Containers</span>
+  </div>
+  <br/>
+  <div>
+    <span class="stack-pill">Free Tier</span>
+    <span class="stack-pill">Starter</span>
+    <span class="stack-pill">Pro</span>
+    <span class="stack-pill">Agency</span>
+  </div>
+  <span class="slide-num">1 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 2 — Architecture Overview
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2>Architecture Overview</h2>
+  <h3>End-to-end data flow</h3>
+  <div class="arch-diagram">
+User Browser<br/>
+&nbsp;&nbsp;└─► <strong style="color:var(--aws-orange)">CloudFront</strong> (CDN + WAF edge)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─► <strong style="color:var(--aws-orange)">S3</strong> (SPA static files)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► <strong style="color:var(--aws-orange)">API Gateway</strong> HTTP v2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► JWT Authorizer Lambda ──► Clerk (external)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► Route Lambdas ──► <strong style="color:var(--aws-orange)">DynamoDB</strong><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► collect_trigger ──► collect_worker (async)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► Meta Ad Library API<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► DynamoDB (write ads)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► <strong style="color:var(--aws-orange)">SQS DLQ</strong> (on failure)<br/>
+<br/>
+<strong style="color:var(--aws-orange)">EventBridge Scheduler</strong> ──► collect_scheduler ──► collect_worker (async)<br/>
+<strong style="color:var(--aws-orange)">CloudWatch</strong> ──► Alarms ──► <strong style="color:var(--aws-orange)">SNS</strong> (email alerts)
+  </div>
+  <span class="slide-num">2 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 1 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 1</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">AWS Lambda</h1>
+  <p style="color:#aad4f5;font-size:1em;">Serverless compute — the backbone of MetaAds</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 3 — Lambda: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">3</span> AWS Lambda — What Is It?</h2>
+  <p style="margin:0 0 0.6em;">Serverless compute that runs code in response to events. Pay only for compute time consumed — <strong>per-invocation + per GB-second</strong>.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Runtime</strong></td><td><code>python3.11</code></td></tr>
+      <tr><td><strong>Trigger types</strong></td><td>HTTP (API Gateway), async invocation, EventBridge schedule</td></tr>
+      <tr><td><strong>Billing unit</strong></td><td>1 ms × MB-of-memory</td></tr>
+      <tr><td><strong>Cold start</strong></td><td>~200–500 ms (mitigated by warm invocations &amp; small payload)</td></tr>
+      <tr><td><strong>Max timeout</strong></td><td>15 minutes (configurable per function)</td></tr>
+      <tr><td><strong>Concurrency</strong></td><td>Default 1,000 / region; reserved concurrency locks capacity for critical functions</td></tr>
+    </tbody>
+  </table>
+  <div class="info-box" style="margin-top:0.7em;">Lambda is the compute backbone of MetaAds — every piece of business logic runs inside a Lambda function.</div>
+  <span class="slide-num">3 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 4 — Lambda: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">4</span> AWS Lambda — Features in MetaAds</h2>
+  <p style="margin:0 0 0.4em;"><strong>8 Functions deployed:</strong></p>
+  <table>
+    <thead><tr><th>Function</th><th>Memory</th><th>Timeout</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>authorizer</code></td><td>128 MB</td><td>10 s</td><td>JWT validation; 5-min result cache</td></tr>
+      <tr><td><code>auth</code></td><td>256 MB</td><td>15 s</td><td>User profile, webhook intake</td></tr>
+      <tr><td><code>niches</code></td><td>256 MB</td><td>15 s</td><td>CRUD for niches</td></tr>
+      <tr><td><code>ads</code></td><td>256 MB</td><td>15 s</td><td>Ads query &amp; pagination</td></tr>
+      <tr><td><code>saved</code></td><td>256 MB</td><td>15 s</td><td>Saved-ads management</td></tr>
+      <tr><td><code>collect_trigger</code></td><td>256 MB</td><td>15 s</td><td>Enqueues a collection job async</td></tr>
+      <tr><td><code>collect_worker</code></td><td>512 MB</td><td>900 s</td><td>Calls Meta API; <strong>reserved concurrency = 5</strong></td></tr>
+      <tr><td><code>collect_scheduler</code></td><td>256 MB</td><td>60 s</td><td>Evaluates all niches; fans out workers</td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.5em;">
+    <strong>Shared Lambda Layer</strong> — all 8 functions share one layer: <code>PyJWT</code>, <code>boto3</code>, <code>svix</code>, <code>requests</code> + internal utilities. The <strong>authorizer result cache (300 s)</strong> means most API requests never hit Clerk again.
+  </div>
+  <span class="slide-num">4 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 5 — Lambda: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">5</span> AWS Lambda — Monthly Cost at 100 Users</h2>
+  <table>
+    <thead><tr><th>Category</th><th>Invocations/mo</th><th>Avg duration</th><th>GB-s</th></tr></thead>
+    <tbody>
+      <tr><td>API Lambdas (auth, niches, ads, saved)</td><td>~180,000</td><td>150 ms × 256 MB</td><td>6,912</td></tr>
+      <tr><td>Authorizer</td><td>~180,000</td><td>50 ms × 128 MB</td><td>1,152</td></tr>
+      <tr><td>collect_trigger</td><td>~2,400</td><td>100 ms × 256 MB</td><td>61</td></tr>
+      <tr><td><strong>collect_worker</strong> (Pro + Agency)</td><td>~720</td><td>300 s × 512 MB</td><td>110,592</td></tr>
+      <tr><td>collect_scheduler</td><td>~240</td><td>10 s × 256 MB</td><td>614</td></tr>
+      <tr><td colspan="3"><strong>Total GB-seconds</strong></td><td><strong>~119,331</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="cols" style="margin-top:0.8em;">
+    <div class="info-box">
+      <strong>Pricing (us-east-1):</strong><br/>
+      Free tier: 400,000 GB-s/mo + 1M invocations<br/>
+      Beyond: $0.0000166667 / GB-s + $0.20 / 1M invocations
+    </div>
+    <div class="tip-box">
+      <strong>Estimated monthly cost:</strong><br/>
+      <span class="cost-free">~$0.00</span> — well within perpetual free tier.<br/>
+      Even at 1,000 users, Lambda costs stay <strong>&lt; $2/month</strong>.
+    </div>
+  </div>
+  <span class="slide-num">5 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 2 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 2</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">Amazon DynamoDB</h1>
+  <p style="color:#aad4f5;font-size:1em;">Fully managed NoSQL — single-table design</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 6 — DynamoDB: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">6</span> Amazon DynamoDB — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">Fully managed NoSQL key-value &amp; document database. Single-digit millisecond performance at any scale. Schemaless, serverless, zero capacity planning in on-demand mode.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Table type</strong></td><td>Single-table design (all entities in one table)</td></tr>
+      <tr><td><strong>Primary key</strong></td><td><code>PK</code> (partition) + <code>SK</code> (sort)</td></tr>
+      <tr><td><strong>Billing mode</strong></td><td>PAY_PER_REQUEST (on-demand)</td></tr>
+      <tr><td><strong>Consistency</strong></td><td>Eventually consistent by default; strongly consistent available</td></tr>
+      <tr><td><strong>Replication</strong></td><td>Multi-AZ by default within a region</td></tr>
+      <tr><td><strong>PITR</strong></td><td>Point-in-Time Recovery — restore to any second in last 35 days</td></tr>
+      <tr><td><strong>TTL</strong></td><td>Automatic item expiration via <code>ttl</code> attribute</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">6 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 7 — DynamoDB: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">7</span> Amazon DynamoDB — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>Single-Table Design — entity access patterns:</strong></p>
+  <table>
+    <thead><tr><th>Entity</th><th>PK</th><th>SK</th><th>GSI</th></tr></thead>
+    <tbody>
+      <tr><td>User</td><td><code>USER#&lt;userId&gt;</code></td><td><code>PROFILE</code></td><td>—</td></tr>
+      <tr><td>Niche</td><td><code>NICHE#&lt;slug&gt;</code></td><td><code>META</code></td><td>GSI1</td></tr>
+      <tr><td>Ad</td><td><code>NICHE#&lt;slug&gt;</code></td><td><code>AD#&lt;adId&gt;</code></td><td>GSI2</td></tr>
+      <tr><td>SavedAd</td><td><code>USER#&lt;userId&gt;</code></td><td><code>SAVED#&lt;adId&gt;</code></td><td>GSI2</td></tr>
+      <tr><td>CollectionRun</td><td><code>NICHE#&lt;slug&gt;</code></td><td><code>RUN#&lt;timestamp&gt;</code></td><td>—</td></tr>
+    </tbody>
+  </table>
+  <div class="info-box" style="margin-top:0.5em;">
+    <strong>GSI1</strong> (<code>entity + created_at</code>) — paginated listing of all niches for admin view<br/>
+    <strong>GSI2</strong> (<code>slug + saved_flag</code>) — efficient saved-ads query per user per niche<br/>
+    <strong>Projection: ALL</strong> on both GSIs — avoids extra reads by returning full items from index
+  </div>
+  <div class="tip-box">
+    <strong>On-demand billing</strong> — zero minimum cost; scales to burst traffic automatically.<br/>
+    <strong>PITR</strong> — accidental delete protection; required for production data.
+  </div>
+  <span class="slide-num">7 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 8 — DynamoDB: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">8</span> Amazon DynamoDB — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    WRU: $1.25/million &nbsp;·&nbsp; RRU: $0.25/million &nbsp;·&nbsp; Storage: $0.25/GB/mo &nbsp;·&nbsp; PITR: $0.20/GB/mo
+  </div>
+  <table>
+    <thead><tr><th>Operation</th><th>Units/month</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>API reads (niches, ads, saved)</td><td>~500,000 RRU</td><td>$0.125</td></tr>
+      <tr><td>API writes (niches, ads, save)</td><td>~50,000 WRU</td><td>$0.063</td></tr>
+      <tr><td>collect_worker writes (ads bulk)</td><td>~720,000 WRU</td><td>$0.90</td></tr>
+      <tr><td>collect_worker reads</td><td>~144,000 RRU</td><td>$0.036</td></tr>
+      <tr><td>Storage (est. 500 MB)</td><td>0.5 GB</td><td>$0.125</td></tr>
+      <tr><td>PITR (0.5 GB)</td><td>0.5 GB</td><td>$0.10</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>~$1.35/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.6em;">
+    Free tier: 25 GB storage, 200M requests/month (first 12 months).<br/>
+    Effective cost in early months: <span class="cost-free">$0</span>
+  </div>
+  <span class="slide-num">8 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 3 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 3</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">API Gateway HTTP v2</h1>
+  <p style="color:#aad4f5;font-size:1em;">Lightweight, high-performance API proxy</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 9 — API Gateway: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">9</span> API Gateway HTTP v2 — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">Lightweight API proxy routing HTTP requests to Lambda. <strong>v2 HTTP API is ~70 % cheaper</strong> than the legacy REST API with lower latency.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Type</strong></td><td>HTTP API (v2) — not REST API</td></tr>
+      <tr><td><strong>Protocol</strong></td><td>HTTPS only</td></tr>
+      <tr><td><strong>Payload format</strong></td><td>2.0 (optimized Lambda integration)</td></tr>
+      <tr><td><strong>Auth</strong></td><td>Custom Lambda JWT authorizer with result caching</td></tr>
+      <tr><td><strong>Throttling</strong></td><td>50 req/s burst, 100 req/s steady (configurable per stage)</td></tr>
+      <tr><td><strong>CORS</strong></td><td>Configured at API level</td></tr>
+      <tr><td><strong>Access logging</strong></td><td>CloudWatch Logs (every request)</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">9 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 10 — API Gateway: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">10</span> API Gateway HTTP v2 — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>28 routes across 6 resource groups:</strong></p>
+  <table>
+    <thead><tr><th>Group</th><th>Example Routes</th></tr></thead>
+    <tbody>
+      <tr><td>Auth</td><td><code>POST /api/auth/register</code>, <code>POST /api/auth/webhook</code></td></tr>
+      <tr><td>Niches</td><td><code>GET /api/niches</code>, <code>POST /api/niches</code>, <code>GET /api/niches/{slug}</code></td></tr>
+      <tr><td>Ads</td><td><code>GET /api/niches/{slug}/ads</code>, <code>GET /api/niches/{slug}/ads/{adId}</code></td></tr>
+      <tr><td>Saved</td><td><code>POST /api/niches/{slug}/saved</code>, <code>DELETE /api/niches/{slug}/saved/{adId}</code></td></tr>
+      <tr><td>Collections</td><td><code>POST /api/niches/{slug}/collect</code>, <code>GET /api/niches/{slug}/collection-runs</code></td></tr>
+      <tr><td>Admin</td><td><code>GET /api/admin/collection-health</code>, <code>GET /api/admin/niches</code></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.5em;">
+    <strong>JWT Authorizer Lambda</strong> — validates Clerk-issued JWT on every protected route.<br/>
+    <code>authorizerResultTtlInSeconds = 300</code> — caches valid tokens for 5 min, dramatically reducing Lambda invocations on active sessions.<br/>
+    <strong>CloudFront sits in front</strong> — all traffic hits CloudFront first; XFF header preserved.
+  </div>
+  <span class="slide-num">10 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 11 — API Gateway: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">11</span> API Gateway HTTP v2 — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    HTTP API Pricing: <strong>$1.00 / million requests</strong> (first 300M/month)
+  </div>
+  <table>
+    <thead><tr><th>Traffic type</th><th>Requests/month</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>API calls (avg 60 req/user/day)</td><td>~180,000</td><td>$0.18</td></tr>
+      <tr><td>Webhook events (Clerk)</td><td>~3,000</td><td>$0.003</td></tr>
+      <tr><td>Collection triggers</td><td>~2,400</td><td>$0.002</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>~$0.19/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.8em;">
+    API Gateway is practically free at this scale. It only becomes a meaningful line item <strong>above ~50M requests/month</strong>.
+  </div>
+  <span class="slide-num">11 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 4 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 4</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">Amazon CloudFront</h1>
+  <p style="color:#aad4f5;font-size:1em;">Global CDN — 450+ edge locations</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 12 — CloudFront: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">12</span> Amazon CloudFront — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">AWS's global CDN. Caches and serves content from <strong>450+ edge locations</strong>, reducing latency and shielding the origin (S3 / API Gateway) from direct traffic.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Edge locations</strong></td><td>450+ globally</td></tr>
+      <tr><td><strong>Price class</strong></td><td>PriceClass_100 (US, Canada, Europe — lowest cost)</td></tr>
+      <tr><td><strong>Origins</strong></td><td>S3 (SPA static files) + API Gateway (API requests)</td></tr>
+      <tr><td><strong>Access control</strong></td><td>Origin Access Control (OAC) — S3 bucket is private; only CloudFront can read it</td></tr>
+      <tr><td><strong>SSL/TLS</strong></td><td>TLS 1.2 minimum; free ACM certificate</td></tr>
+      <tr><td><strong>Compression</strong></td><td>Brotli + Gzip (automatic)</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">12 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 13 — CloudFront: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">13</span> Amazon CloudFront — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>Two-origin distribution:</strong></p>
+  <table>
+    <thead><tr><th>Origin</th><th>Path Pattern</th><th>Cache Behavior</th></tr></thead>
+    <tbody>
+      <tr><td>S3 (SPA)</td><td><code>/</code> (default)</td><td>Aggressive caching; SPA 404→200 for React Router</td></tr>
+      <tr><td>API Gateway</td><td><code>/api/*</code></td><td>No caching (pass-through); forward all headers + cookies</td></tr>
+    </tbody>
+  </table>
+  <div class="info-box" style="margin-top:0.5em;">
+    <strong>Security headers policy</strong> (applied at edge — no Lambda@Edge needed):<br/>
+    <code>Strict-Transport-Security</code> &nbsp;·&nbsp; <code>X-Content-Type-Options: nosniff</code><br/>
+    <code>X-Frame-Options: DENY</code> &nbsp;·&nbsp; <code>Referrer-Policy: strict-origin-when-cross-origin</code>
+  </div>
+  <div class="tip-box">
+    <strong>SPA routing fix:</strong> Custom error response — 404 from S3 → served as <code>index.html</code> with HTTP 200. Allows React Router to handle client-side navigation.<br/>
+    <strong>OAC</strong> — CloudFront signs requests to S3 using AWS SigV4; bucket never accessible directly.
+  </div>
+  <span class="slide-num">13 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 14 — CloudFront: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">14</span> Amazon CloudFront — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    HTTPS requests: $0.0100 / 10,000 &nbsp;·&nbsp; Data transfer: $0.085/GB &nbsp;·&nbsp; Free tier: 1 TB + 10M requests/month (perpetual)
+  </div>
+  <table>
+    <thead><tr><th>Item</th><th>Volume</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>HTTPS requests (SPA assets + API)</td><td>~500,000</td><td>$0.50</td></tr>
+      <tr><td>Data transfer (SPA ~500 KB × users)</td><td>~2 GB</td><td>$0.17</td></tr>
+      <tr><td>API pass-through (minimal payload)</td><td>—</td><td>~$0.10</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>~$0.77/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.6em;">
+    With the perpetual free tier (1 TB + 10M requests), CloudFront is effectively <span class="cost-free">$0</span> for the first months.<br/>
+    Conservative model estimate: <strong>$1.50/month</strong> (includes CDN overhead).
+  </div>
+  <span class="slide-num">14 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 5 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 5</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">Amazon S3</h1>
+  <p style="color:#aad4f5;font-size:1em;">Object storage — 11 nines durability</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 15 — S3: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">15</span> Amazon S3 — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">Object storage with <strong>99.999999999 % (11 nines)</strong> durability. De-facto standard for hosting static websites and build artifacts on AWS.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Storage class</strong></td><td>S3 Standard (default)</td></tr>
+      <tr><td><strong>Durability</strong></td><td>11 nines — data replicated across ≥ 3 AZs</td></tr>
+      <tr><td><strong>Availability</strong></td><td>99.99 % SLA</td></tr>
+      <tr><td><strong>Max object size</strong></td><td>5 TB</td></tr>
+      <tr><td><strong>Versioning</strong></td><td>Enabled on both buckets</td></tr>
+      <tr><td><strong>Access</strong></td><td>Bucket policies; no public ACLs</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">15 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 16 — S3: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">16</span> Amazon S3 — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>Two buckets in production:</strong></p>
+  <table>
+    <thead><tr><th>Bucket</th><th>Purpose</th><th>Access</th></tr></thead>
+    <tbody>
+      <tr><td><code>metaads-frontend-{env}</code></td><td>React SPA build artifacts (<code>index.html</code>, JS, CSS, assets)</td><td>CloudFront OAC only (private)</td></tr>
+      <tr><td><code>metaads-lambda-packages-{env}</code></td><td>Lambda <code>.zip</code> packages + Layer zip</td><td>Terraform / CI only</td></tr>
+    </tbody>
+  </table>
+  <div class="info-box" style="margin-top:0.5em;">
+    <strong>Frontend bucket:</strong> <code>block_public_acls = true</code>; bucket policy allows <code>s3:GetObject</code> only to the specific CloudFront distribution via OAC. Versioning keeps previous deploys.
+  </div>
+  <div class="tip-box">
+    <strong>Lambda packages bucket:</strong> Versioning enabled — Terraform tracks which zip was last deployed.<br/>
+    <strong>Lifecycle rule:</strong> non-current versions expire after <strong>30 days</strong> to control storage costs.
+  </div>
+  <span class="slide-num">16 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 17 — S3: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">17</span> Amazon S3 — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    Storage: $0.023/GB/mo &nbsp;·&nbsp; PUT/POST: $0.005/1K &nbsp;·&nbsp; GET: $0.0004/1K &nbsp;·&nbsp; Data to CloudFront: <strong>$0</strong> (free within AWS)
+  </div>
+  <table>
+    <thead><tr><th>Item</th><th>Volume</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend build (~5 MB × 10 deploys, versioned)</td><td>~50 MB</td><td>$0.001</td></tr>
+      <tr><td>Lambda packages (~20 MB × 8 functions + layer)</td><td>~220 MB</td><td>$0.005</td></tr>
+      <tr><td>GET requests from CloudFront</td><td>~200,000</td><td>$0.08</td></tr>
+      <tr><td>PUT requests (CI deploys)</td><td>~200</td><td>$0.001</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>~$0.09/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.6em;">
+    S3 is the <strong>cheapest component</strong> in the stack. The perpetual free tier (5 GB, 20K GETs, 2K PUTs/month) covers most of this.<br/>
+    Conservative model estimate: <strong>$0.10/month</strong>.
+  </div>
+  <span class="slide-num">17 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 6 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 6</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">AWS Secrets Manager</h1>
+  <p style="color:#aad4f5;font-size:1em;">Secure credential storage with rotation support</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 18 — Secrets Manager: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">18</span> AWS Secrets Manager — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">Fully managed service for storing, rotating, and auditing secrets. Eliminates hardcoded credentials — replaces them with dynamic, access-controlled lookups at runtime.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Secret types</strong></td><td>Key-value pairs, plain text, JSON blobs</td></tr>
+      <tr><td><strong>Encryption</strong></td><td>AES-256 via AWS KMS (default managed key)</td></tr>
+      <tr><td><strong>Access control</strong></td><td>IAM policies + resource-based policies</td></tr>
+      <tr><td><strong>Rotation</strong></td><td>Built-in for RDS; custom Lambda rotation for others</td></tr>
+      <tr><td><strong>Audit</strong></td><td>All access logged in AWS CloudTrail</td></tr>
+      <tr><td><strong>Billing</strong></td><td>$0.40 / secret / month + $0.05 / 10,000 API calls</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">18 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 19 — Secrets Manager: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">19</span> AWS Secrets Manager — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>Two secrets in production:</strong></p>
+  <table>
+    <thead><tr><th>Secret Name</th><th>Contents</th><th>Used By</th></tr></thead>
+    <tbody>
+      <tr><td><code>metaads/{env}/meta-api</code></td><td><code>access_token</code> (Meta Ad Library API key)</td><td><code>collect_worker</code> Lambda</td></tr>
+      <tr><td><code>metaads/{env}/clerk</code></td><td><code>secret_key</code>, <code>publishable_key</code>, <code>webhook_secret</code></td><td><code>auth</code> + <code>authorizer</code> Lambda</td></tr>
+    </tbody>
+  </table>
+  <p style="margin:0.5em 0 0.2em;"><strong>How Lambda accesses secrets:</strong></p>
+  <pre><code>import boto3, json
+secrets_client = boto3.client('secretsmanager')
+secret = secrets_client.get_secret_value(SecretId='metaads/prod/meta-api')
+creds = json.loads(secret['SecretString'])
+META_ACCESS_TOKEN = creds['access_token']
+# ↑ Called at cold-start, then cached in memory for warm invocations</code></pre>
+  <div class="tip-box">
+    <strong>IAM least-privilege:</strong> <code>collect_worker</code> can only read the meta-api secret; <code>auth</code> can only read the Clerk secret — enforced via per-function IAM roles.
+  </div>
+  <span class="slide-num">19 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 20 — Secrets Manager: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">20</span> AWS Secrets Manager — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    $0.40 / secret / month (storage) &nbsp;·&nbsp; $0.05 / 10,000 API calls
+  </div>
+  <table>
+    <thead><tr><th>Item</th><th>Quantity</th><th>Cost/month</th></tr></thead>
+    <tbody>
+      <tr><td><code>meta-api</code> secret</td><td>1</td><td>$0.40</td></tr>
+      <tr><td><code>clerk</code> secret</td><td>1</td><td>$0.40</td></tr>
+      <tr><td>API calls (Lambda cold starts × ~500 unique invocations)</td><td>~1,000 calls</td><td>$0.005</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>$0.81/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.6em;">
+    The flat <strong>$0.40/secret/month</strong> is the dominant cost — API calls are negligible because Lambda <strong>caches the secret in memory</strong> after each cold start (no re-fetch on warm invocations).<br/>
+    Model estimate: <strong>$0.80/month</strong> (2 secrets × $0.40).
+  </div>
+  <span class="slide-num">20 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 7 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 7</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">EventBridge Scheduler</h1>
+  <p style="color:#aad4f5;font-size:1em;">Serverless cron — triggers the collection pipeline every 3 hours</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 21 — EventBridge: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">21</span> EventBridge Scheduler — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">Fully managed, serverless scheduler that can invoke any AWS target on a one-time or recurring schedule. Replaced CloudWatch Events Scheduler in 2022. Supports cron, rate, and one-time expressions.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Schedule types</strong></td><td>Cron, rate, one-time</td></tr>
+      <tr><td><strong>Targets</strong></td><td>Lambda, SQS, SNS, Step Functions, 200+ others</td></tr>
+      <tr><td><strong>Flexible time window</strong></td><td>Allows delivery within a N-minute window (reduces thundering herd)</td></tr>
+      <tr><td><strong>Retry policy</strong></td><td>Configurable max attempts + max event age</td></tr>
+      <tr><td><strong>Billing</strong></td><td>$1.00 / million invocations (first 14M/month free)</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">21 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 22 — EventBridge: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">22</span> EventBridge Scheduler — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>Single schedule in production:</strong></p>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Expression</strong></td><td><code>cron(0 */3 * * ? *)</code></td></tr>
+      <tr><td><strong>Meaning</strong></td><td>Every 3 hours, at minute 0</td></tr>
+      <tr><td><strong>Target</strong></td><td><code>collect_scheduler</code> Lambda</td></tr>
+      <tr><td><strong>Flexible window</strong></td><td>15 minutes (reduces cold-start spikes)</td></tr>
+      <tr><td><strong>Retry attempts</strong></td><td>1</td></tr>
+      <tr><td><strong>Max event age</strong></td><td>300 seconds</td></tr>
+    </tbody>
+  </table>
+  <div class="arch-diagram" style="margin-top:0.5em;font-size:0.58em;">
+EventBridge Scheduler (every 3h)<br/>
+&nbsp;&nbsp;└─► collect_scheduler Lambda<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► Scans all niches in DynamoDB<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► For each niche eligible for collection:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─► Async invoke collect_worker Lambda
+  </div>
+  <div class="tip-box" style="margin-top:0.4em;">
+    <code>collect_scheduler</code> is a <strong>fan-out controller</strong> — never does heavy work itself. Evaluates which niches are "due" (based on <code>started_at + 3h interval</code>) and fires individual <code>collect_worker</code> invocations with reserved concurrency = 5.<br/>
+    <strong>IAM role</strong> — EventBridge has <code>lambda:InvokeFunction</code> scoped only to <code>collect_scheduler</code> ARN.
+  </div>
+  <span class="slide-num">22 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 23 — EventBridge: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">23</span> EventBridge Scheduler — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    First <strong>14,000,000 invocations/month: FREE</strong> &nbsp;·&nbsp; Beyond: $1.00 / million
+  </div>
+  <table>
+    <thead><tr><th>Item</th><th>Volume</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Schedule invocations (8 per day × 30 days)</td><td>240</td><td>$0.00</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>$0.00/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.8em;">
+    240 invocations/month is minuscule — the free tier covers up to <strong>14 million</strong>.<br/>
+    EventBridge Scheduler costs effectively <span class="cost-free">$0</span> at any realistic scale of this application.<br/>
+    Model estimate: <strong>&lt; $0.01</strong> (rounded to $0.00).
+  </div>
+  <span class="slide-num">23 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 8 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 8</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">Amazon SQS</h1>
+  <p style="color:#aad4f5;font-size:1em;">Dead Letter Queue — zero silent failures</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 24 — SQS: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">24</span> Amazon SQS — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">Fully managed message queuing service that decouples and scales distributed system components. Messages stored durably until consumed or expired. Supports standard (at-least-once) and FIFO (exactly-once) queues.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Queue types</strong></td><td>Standard (at-least-once) and FIFO (exactly-once)</td></tr>
+      <tr><td><strong>Message retention</strong></td><td>1 minute to 14 days (configurable)</td></tr>
+      <tr><td><strong>Visibility timeout</strong></td><td>Time a consumer has to process a message before it reappears</td></tr>
+      <tr><td><strong>Dead Letter Queue</strong></td><td>Destination for messages that fail processing N times</td></tr>
+      <tr><td><strong>Billing</strong></td><td>$0.40 / million requests (first 1M/month free)</td></tr>
+      <tr><td><strong>Max message size</strong></td><td>256 KB</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">24 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 25 — SQS: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">25</span> Amazon SQS — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>Role in MetaAds — Dead Letter Queue only.</strong> SQS is not used as a work queue; job dispatching happens via Lambda async invocation.</p>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Queue type</strong></td><td>Standard</td></tr>
+      <tr><td><strong>Message retention</strong></td><td>14 days</td></tr>
+      <tr><td><strong>Visibility timeout</strong></td><td>60 seconds</td></tr>
+      <tr><td><strong>Attached to</strong></td><td><code>collect_worker</code> Lambda (async invocation DLQ)</td></tr>
+    </tbody>
+  </table>
+  <div class="info-box" style="margin-top:0.5em;">
+    <strong>What lands in the DLQ?</strong> When <code>collect_scheduler</code> async-invokes <code>collect_worker</code> and the worker fails (exception, timeout, or Meta API error), Lambda retries twice. After both retries fail, the payload is sent here.
+  </div>
+  <div class="tip-box">
+    <strong>Zero silent failures</strong> — every failed collection is recorded and replayable.<br/>
+    <strong>CloudWatch Alarm</strong> (<code>metaads-dlq-depth</code>) triggers if <code>ApproximateNumberOfMessagesVisible &gt; 0</code> — instant notification when any collection job fails.
+  </div>
+  <span class="slide-num">25 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 26 — SQS: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">26</span> Amazon SQS — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    First <strong>1,000,000 requests/month: FREE</strong> (perpetual free tier) &nbsp;·&nbsp; Beyond: $0.40 / million
+  </div>
+  <table>
+    <thead><tr><th>Item</th><th>Volume</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>DLQ receives (assume 1 % failure rate on 720 worker invocations)</td><td>~7 messages</td><td>$0.00</td></tr>
+      <tr><td>CloudWatch polling DLQ for alarm</td><td>~8,640 polls</td><td>$0.00</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>$0.00/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.8em;">
+    The DLQ handles failure edge cases only — normal operation generates <strong>zero SQS traffic</strong>.<br/>
+    Well within the perpetual free tier.<br/>
+    Model estimate: <strong>$0.00</strong>.
+  </div>
+  <span class="slide-num">26 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 9 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 9</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">CloudWatch + SNS</h1>
+  <p style="color:#aad4f5;font-size:1em;">Observability, alarms, and email alerts</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 27 — CloudWatch + SNS: What Are They?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">27</span> CloudWatch + SNS — What Are They?</h2>
+  <div class="cols">
+    <div>
+      <p style="margin:0 0 0.3em;"><strong>Amazon CloudWatch</strong> — unified observability: metrics, logs, and events from all AWS services.</p>
+      <table>
+        <thead><tr><th>CloudWatch</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Log Groups</strong></td><td>Persistent log storage for Lambda output</td></tr>
+          <tr><td><strong>Metrics</strong></td><td>Built-in AWS metrics + custom app metrics</td></tr>
+          <tr><td><strong>Alarms</strong></td><td>Threshold-based alerts with SNS actions</td></tr>
+          <tr><td><strong>Retention</strong></td><td>7 days per log group (MetaAds config)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p style="margin:0 0 0.3em;"><strong>Amazon SNS</strong> — pub/sub messaging for fan-out notifications.</p>
+      <table>
+        <thead><tr><th>SNS</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Topic types</strong></td><td>Standard and FIFO</td></tr>
+          <tr><td><strong>Subscribers</strong></td><td>Email, SMS, Lambda, SQS, HTTP</td></tr>
+          <tr><td><strong>Billing</strong></td><td>$0.50 / million publishes; email free</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <span class="slide-num">27 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 28 — CloudWatch + SNS: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">28</span> CloudWatch + SNS — Features in MetaAds</h2>
+  <div class="cols">
+    <div>
+      <p style="margin:0 0 0.3em;"><strong>9 CloudWatch Log Groups (7-day retention):</strong></p>
+      <table>
+        <thead><tr><th>Log Group</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>…-authorizer</code></td><td>JWT authorizer</td></tr>
+          <tr><td><code>…-auth</code></td><td>Auth handler</td></tr>
+          <tr><td><code>…-niches</code></td><td>Niches CRUD</td></tr>
+          <tr><td><code>…-ads</code></td><td>Ads query</td></tr>
+          <tr><td><code>…-saved</code></td><td>Saved ads</td></tr>
+          <tr><td><code>…-collect-trigger</code></td><td>Trigger handler</td></tr>
+          <tr><td><code>…-collect-worker</code></td><td>Collection worker</td></tr>
+          <tr><td><code>…-collect-scheduler</code></td><td>Scheduler</td></tr>
+          <tr><td><code>…-api-gateway</code></td><td>API access logs</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p style="margin:0 0 0.3em;"><strong>4 CloudWatch Alarms → SNS topic:</strong></p>
+      <table>
+        <thead><tr><th>Alarm</th><th>Threshold</th></tr></thead>
+        <tbody>
+          <tr><td><code>dynamodb-read-throttle</code></td><td><code>ReadThrottleEvents &gt; 0</code></td></tr>
+          <tr><td><code>dynamodb-write-throttle</code></td><td><code>WriteThrottleEvents &gt; 0</code></td></tr>
+          <tr><td><code>worker-errors</code></td><td><code>Errors &gt; 5</code> on collect_worker</td></tr>
+          <tr><td><code>dlq-depth</code></td><td><code>MessagesVisible &gt; 0</code></td></tr>
+        </tbody>
+      </table>
+      <div class="tip-box" style="margin-top:0.4em;font-size:0.75em;">
+        <strong>SNS Topic</strong> <code>metaads-{env}-alerts</code> — all 4 alarms fan out to this topic. Optional email subscription via Terraform variable <code>alert_email</code>.
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">28 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 29 — CloudWatch + SNS: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">29</span> CloudWatch + SNS — Monthly Cost at 100 Users</h2>
+  <div class="info-box" style="margin-bottom:0.5em;">
+    Log ingestion: $0.50/GB &nbsp;·&nbsp; Alarm: $0.10/alarm/mo &nbsp;·&nbsp; SNS email: <strong>FREE</strong>
+  </div>
+  <table>
+    <thead><tr><th>Item</th><th>Volume</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Log ingestion (9 groups × ~10 MB avg)</td><td>~90 MB = 0.09 GB</td><td>$0.045</td></tr>
+      <tr><td>Alarms (4 alarms × $0.10)</td><td>4</td><td>$0.40</td></tr>
+      <tr><td>SNS email notifications (on-call alerts)</td><td>~50</td><td>$0.00</td></tr>
+      <tr><td>API Gateway access logs</td><td>~30 MB = 0.03 GB</td><td>$0.015</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>~$0.46/month</strong></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.6em;">
+    Free tier: 5 GB log ingestion, 10 alarms, 10 custom metrics. In early months: <span class="cost-free">$0</span>.<br/>
+    Model estimate: <strong>$0.50/month</strong> (conservative with 4 alarms).
+  </div>
+  <span class="slide-num">29 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 10 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 10</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">AWS IAM</h1>
+  <p style="color:#aad4f5;font-size:1em;">Access control — least-privilege, always free</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 30 — IAM: What Is It?
+═══════════════════════════════════════════════════════ -->
+<section class="what-is-it" data-transition="slide">
+  <h2><span class="badge">30</span> AWS IAM — What Is It?</h2>
+  <p style="margin:0 0 0.5em;">Access control system for all AWS services. Every API call must be signed by an IAM identity. IAM policies define exactly what actions are permitted on which resources.</p>
+  <table>
+    <thead><tr><th>Concept</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Roles</strong></td><td>Identities assumed by AWS services (Lambda, API Gateway)</td></tr>
+      <tr><td><strong>Policies</strong></td><td>JSON documents defining allowed/denied actions + resources</td></tr>
+      <tr><td><strong>Principle</strong></td><td>Least-privilege — grant only what is strictly necessary</td></tr>
+      <tr><td><strong>Trust policy</strong></td><td>Defines which service can assume the role</td></tr>
+      <tr><td><strong>Billing</strong></td><td><span class="cost-free">FREE</span> — IAM has no cost</td></tr>
+    </tbody>
+  </table>
+  <span class="slide-num">30 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 31 — IAM: Features
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">31</span> AWS IAM — Features in MetaAds</h2>
+  <p style="margin:0 0 0.3em;"><strong>4 IAM Roles in production:</strong></p>
+  <table>
+    <thead><tr><th>Role</th><th>Assumed By</th><th>Key Permissions</th></tr></thead>
+    <tbody>
+      <tr><td><code>metaads-lambda-api-role</code></td><td>auth, niches, ads, saved, trigger</td><td><code>dynamodb:*</code> on MetaAds table; Clerk secret read; CloudWatch logs</td></tr>
+      <tr><td><code>metaads-lambda-collector-role</code></td><td>collect_worker, collect_scheduler</td><td><code>dynamodb:*</code>; Meta API secret read; <code>lambda:InvokeFunction</code> on worker; <code>sqs:SendMessage</code> to DLQ</td></tr>
+      <tr><td><code>metaads-lambda-authorizer-role</code></td><td>authorizer Lambda</td><td>CloudWatch logs; Clerk secret read only</td></tr>
+      <tr><td><code>metaads-apigw-logging-role</code></td><td>API Gateway service</td><td><code>logs:CreateLogDelivery</code>, <code>logs:PutLogEvents</code></td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.5em;">
+    <strong>EventBridge IAM Role</strong> (inline) — <code>lambda:InvokeFunction</code> scoped to <code>collect_scheduler</code> ARN only.<br/>
+    <strong>Terraform manages all IAM resources</strong> — roles, policies, attachments, and trust relationships are version-controlled and auditable via code review.
+  </div>
+  <span class="slide-num">31 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 32 — IAM: Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">32</span> AWS IAM — Monthly Cost at 100 Users</h2>
+  <div style="text-align:center;margin:1em 0;">
+    <span class="cost-total">$0.00 / month</span><br/>
+    <span style="font-size:0.8em;color:#aad4f5;">IAM is completely free — always.</span>
+  </div>
+  <table>
+    <thead><tr><th>Item</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>4 IAM roles</td><td><span class="cost-free">$0.00</span></td></tr>
+      <tr><td>6 IAM policies</td><td><span class="cost-free">$0.00</span></td></tr>
+      <tr><td>All authentication / authorization overhead</td><td><span class="cost-free">$0.00</span></td></tr>
+      <tr><td><strong>Total</strong></td><td><strong><span class="cost-free">$0.00/month</span></strong></td></tr>
+    </tbody>
+  </table>
+  <div class="info-box" style="margin-top:0.8em;">
+    IAM is free, but its value is immeasurable — it is the security boundary that ensures a compromised Lambda function cannot access another function's secrets, and that no service can act outside its defined scope.
+  </div>
+  <span class="slide-num">32 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     PART 11 DIVIDER
+═══════════════════════════════════════════════════════ -->
+<section class="part-divider" data-transition="zoom">
+  <p class="part-number">Part 11</p>
+  <h1 class="part-title" style="color:var(--aws-orange)">Cost Summary</h1>
+  <p style="color:#aad4f5;font-size:1em;">Per-service breakdown · Revenue vs. Cost · Scaling projections</p>
+  <span class="slide-num">— / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 33 — Aggregated Monthly Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">33</span> Aggregated Monthly Cost — Per-Service at 100 Users</h2>
+  <div style="display:flex;gap:16px;align-items:flex-start;">
+    <div style="flex:1.6;">
+      <table>
+        <thead><tr><th>AWS Service</th><th>Cost/mo</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><strong>AWS Lambda</strong></td><td><span class="cost-free">$0.00</span></td><td>Within perpetual free tier (400K GB-s)</td></tr>
+          <tr><td><strong>Amazon DynamoDB</strong></td><td>$1.35</td><td>On-demand; bulk ad writes dominate</td></tr>
+          <tr><td><strong>API Gateway</strong></td><td>$0.19</td><td>~185K HTTP requests/month</td></tr>
+          <tr><td><strong>CloudFront</strong></td><td>$0.77</td><td>PriceClass_100; mostly in free tier</td></tr>
+          <tr><td><strong>Amazon S3</strong></td><td>$0.09</td><td>2 small buckets; within free tier</td></tr>
+          <tr><td><strong>Secrets Manager</strong></td><td>$0.81</td><td>2 secrets × $0.40 flat fee</td></tr>
+          <tr><td><strong>EventBridge</strong></td><td><span class="cost-free">$0.00</span></td><td>240 invocations — free tier covers 14M</td></tr>
+          <tr><td><strong>SQS (DLQ)</strong></td><td><span class="cost-free">$0.00</span></td><td>~7 messages/month</td></tr>
+          <tr><td><strong>CloudWatch + SNS</strong></td><td>$0.46</td><td>Log ingestion + 4 alarms</td></tr>
+          <tr><td><strong>AWS IAM</strong></td><td><span class="cost-free">$0.00</span></td><td>Always free</td></tr>
+          <tr><td><strong>Terraform state + misc</strong></td><td>$0.13</td><td>S3 state file, DDB lock, data transfer</td></tr>
+          <tr><td><strong>Fixed Total</strong></td><td><strong>$3.80</strong></td><td>Regardless of tier mix</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="flex:1;">
+      <p style="margin:0 0 0.3em;font-size:0.8em;"><strong>Variable cost by tier:</strong></p>
+      <table>
+        <thead><tr><th>Tier</th><th>$/user/mo</th><th>Users</th><th>Subtotal</th></tr></thead>
+        <tbody>
+          <tr><td>Free</td><td>$0.01</td><td>60</td><td>$0.60</td></tr>
+          <tr><td>Starter</td><td>$0.20</td><td>30</td><td>$6.00</td></tr>
+          <tr><td>Pro</td><td>$0.85</td><td>8</td><td>$6.80</td></tr>
+          <tr><td>Agency</td><td>$7.70</td><td>2</td><td>$15.40</td></tr>
+          <tr><td><strong>Variable</strong></td><td></td><td><strong>100</strong></td><td><strong>$28.80</strong></td></tr>
+        </tbody>
+      </table>
+      <div style="text-align:center;margin-top:0.8em;">
+        <span style="font-size:0.75em;color:#aad4f5;">Grand Total</span><br/>
+        <span class="cost-total">~$32 / month</span>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">33 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 34 — Revenue vs. Cost
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">34</span> Revenue vs. Cost — Business Case at 100 Users</h2>
+  <div class="cols">
+    <div>
+      <p style="margin:0 0 0.3em;"><strong>Monthly Revenue:</strong></p>
+      <table>
+        <thead><tr><th>Tier</th><th>Price/mo</th><th>Users</th><th>Revenue</th></tr></thead>
+        <tbody>
+          <tr><td>Free</td><td>$0</td><td>60</td><td>$0</td></tr>
+          <tr><td>Starter</td><td>$29</td><td>30</td><td>$870</td></tr>
+          <tr><td>Pro</td><td>$79</td><td>8</td><td>$632</td></tr>
+          <tr><td>Agency</td><td>$299</td><td>2</td><td>$598</td></tr>
+          <tr><td><strong>Total MRR</strong></td><td></td><td><strong>100</strong></td><td><strong>$2,100</strong></td></tr>
+        </tbody>
+      </table>
+      <pre style="margin-top:0.6em;">Monthly Revenue:   $2,100
+AWS Infrastructure:  - $32   (1.5% of revenue)
+                  ─────────
+Gross Profit:      $2,068
+Gross Margin:       98.5 %</pre>
+    </div>
+    <div>
+      <p style="margin:0 0 0.3em;"><strong>Why the margin is so high:</strong></p>
+      <ol style="font-size:0.78em;line-height:1.7;padding-left:1.2em;color:#d4d4d4;">
+        <li><strong>Lambda is free</strong> at this scale — serverless compute charges negligible</li>
+        <li><strong>DynamoDB on-demand</strong> — zero minimum, no wasted capacity</li>
+        <li><strong>No servers / containers</strong> — zero EC2, ECS, or RDS costs</li>
+        <li><strong>CloudFront free tier</strong> absorbs CDN costs in early months</li>
+        <li><strong>Variable cost sub-linear</strong> — doubling users ≠ doubling AWS spend</li>
+      </ol>
+      <div style="text-align:center;margin-top:1em;">
+        <span style="font-size:0.75em;color:#aad4f5;">Gross Margin</span><br/>
+        <span class="cost-total">98.5 %</span>
+      </div>
+    </div>
+  </div>
+  <span class="slide-num">34 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 35 — Scaling Projections
+═══════════════════════════════════════════════════════ -->
+<section class="cost-slide" data-transition="slide">
+  <h2><span class="badge">35</span> Scaling Projections</h2>
+  <p style="margin:0 0 0.4em;font-size:0.8em;">AWS cost at different user counts (same 60/30/8/2 % tier split):</p>
+  <table>
+    <thead><tr><th>Users</th><th>Fixed AWS</th><th>Variable AWS</th><th>Total AWS</th><th>Est. MRR</th><th>Gross Margin</th></tr></thead>
+    <tbody>
+      <tr><td>50</td><td>$3.80</td><td>$14.40</td><td>$18.20</td><td>$1,050</td><td>98.3 %</td></tr>
+      <tr style="background:rgba(255,153,0,0.08);"><td><strong>100</strong></td><td>$3.80</td><td>$28.80</td><td><strong>$32.00</strong></td><td>$2,100</td><td><strong>98.5 %</strong></td></tr>
+      <tr><td>250</td><td>$4.50</td><td>$72.00</td><td>$76.50</td><td>$5,250</td><td>98.5 %</td></tr>
+      <tr><td>500</td><td>$5.50</td><td>$144.00</td><td>$149.50</td><td>$10,500</td><td>98.6 %</td></tr>
+      <tr><td>1,000</td><td>$7.00</td><td>$288.00</td><td>$295.00</td><td>$21,000</td><td>98.6 %</td></tr>
+      <tr><td>5,000</td><td>$15.00</td><td>$1,440.00</td><td>$1,455.00</td><td>$105,000</td><td>98.6 %</td></tr>
+    </tbody>
+  </table>
+  <div class="tip-box" style="margin-top:0.5em;">
+    <strong>Key insight:</strong> AWS costs scale linearly with usage while gross margin stays constant at <strong>~98.5 %</strong> — consistent unit economics from 50 to 5,000 users with zero architectural changes.
+  </div>
+  <div class="info-box">
+    <strong>When to re-evaluate:</strong> &gt;5K users — DynamoDB reserved capacity (25–40 % discount) &nbsp;·&nbsp; &gt;10K users — reserved concurrency + CF price class upgrade &nbsp;·&nbsp; &gt;50K users — Aurora Serverless + multi-region
+  </div>
+  <span class="slide-num">35 / 36</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 36 — Architecture Decision Record Summary
+═══════════════════════════════════════════════════════ -->
+<section class="features-slide" data-transition="slide">
+  <h2><span class="badge">36</span> Architecture Decision Record Summary</h2>
+  <table>
+    <thead><tr><th>Decision</th><th>Choice</th><th>Rationale</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Compute</strong></td><td>Lambda (serverless)</td><td>Zero idle cost; scales to zero; no server management</td></tr>
+      <tr><td><strong>Database</strong></td><td>DynamoDB (on-demand)</td><td>Zero minimum cost; single-table for simplicity; 10 ms p99</td></tr>
+      <tr><td><strong>API</strong></td><td>API Gateway HTTP v2</td><td>70 % cheaper than REST API; native Lambda integration</td></tr>
+      <tr><td><strong>CDN</strong></td><td>CloudFront</td><td>OAC for S3 security; edge security headers; free tier</td></tr>
+      <tr><td><strong>Secrets</strong></td><td>Secrets Manager</td><td>Rotation support; IAM-scoped access; audit trail</td></tr>
+      <tr><td><strong>Scheduling</strong></td><td>EventBridge Scheduler</td><td>Native Lambda target; flexible time window; reliable</td></tr>
+      <tr><td><strong>Failure handling</strong></td><td>SQS DLQ</td><td>Silent failure prevention; replay capability</td></tr>
+      <tr><td><strong>Observability</strong></td><td>CloudWatch + SNS</td><td>Native AWS; zero integration work; email alerts free</td></tr>
+      <tr><td><strong>IaC</strong></td><td>Terraform</td><td>State management; dev/prod workspaces; team-friendly</td></tr>
+      <tr><td><strong>Auth</strong></td><td>Clerk (external)</td><td>Best-in-class DX; webhook support; JWT validation</td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top:0.8em;text-align:center;font-size:0.7em;color:rgba(255,255,255,0.35);">
+    Architecture version: production-v1 &nbsp;·&nbsp; AWS region: us-east-1 &nbsp;·&nbsp; Generated: 2026-02-28
+  </div>
+  <span class="slide-num">36 / 36</span>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: false,
+    controls: true,
+    progress: true,
+    center: true,
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'fade',
+    width: 1200,
+    height: 700,
+    margin: 0.04,
+    plugins: []
+  });
+</script>
+</body>
+</html>

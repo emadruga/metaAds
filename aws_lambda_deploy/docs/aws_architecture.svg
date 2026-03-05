@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="410" viewBox="0 0 1100 410"
+     font-family="-apple-system, Arial, Helvetica, sans-serif">
+
+  <!-- BACKGROUND -->
+  <rect width="1100" height="410" fill="#f0f2f5"/>
+
+  <!-- ARROWHEAD MARKERS -->
+  <defs>
+    <marker id="ah"  viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="7" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#555"/></marker>
+    <marker id="ahb" viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="7" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#3F48CC"/></marker>
+    <marker id="aho" viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="7" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#FF9900"/></marker>
+    <marker id="ahp" viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="7" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#E7157B"/></marker>
+    <marker id="ahi" viewBox="0 0 10 7" markerWidth="8" markerHeight="6" refX="7" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#6366f1"/></marker>
+  </defs>
+
+  <!-- TITLE -->
+  <text x="550" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a202c">MetaAds — AWS Production Architecture</text>
+  <text x="550" y="43" text-anchor="middle" font-size="11" fill="#4a5568">Fully Serverless · On-Demand · us-east-1 · Python 3.11</text>
+
+  <!-- ══════════════════════════════════════════════════
+       ROW 1  (y=55)
+       Browser · CloudFront · API Gateway · JWT Auth · Clerk · DynamoDB(tall)
+       ══════════════════════════════════════════════════ -->
+
+  <!-- User Browser -->
+  <rect x="10"  y="55" width="108" height="75" rx="5" fill="#475569"/>
+  <text x="64"  y="79" text-anchor="middle" font-size="12" font-weight="bold" fill="white">User Browser</text>
+  <text x="64"  y="95" text-anchor="middle" font-size="9"  fill="#cbd5e1">Vue 3 SPA</text>
+  <text x="64" y="108" text-anchor="middle" font-size="9"  fill="#cbd5e1">HTTPS only</text>
+  <text x="64" y="121" text-anchor="middle" font-size="8"  fill="#94a3b8">Clerk auth</text>
+
+  <!-- CloudFront -->
+  <rect x="133" y="55" width="148" height="75" rx="5" fill="#8C4FFF"/>
+  <text x="207" y="79"  text-anchor="middle" font-size="12" font-weight="bold" fill="white">CloudFront</text>
+  <text x="207" y="95"  text-anchor="middle" font-size="9"  fill="#e9d5ff">CDN · HTTPS enforced</text>
+  <text x="207" y="108" text-anchor="middle" font-size="9"  fill="#e9d5ff">PriceClass_100 · OAC</text>
+  <text x="207" y="121" text-anchor="middle" font-size="8"  fill="#ddd6fe">Security headers · Brotli</text>
+
+  <!-- API Gateway -->
+  <rect x="298" y="55" width="190" height="75" rx="5" fill="#8C4FFF"/>
+  <text x="393" y="79"  text-anchor="middle" font-size="12" font-weight="bold" fill="white">API Gateway HTTP v2</text>
+  <text x="393" y="95"  text-anchor="middle" font-size="9"  fill="#e9d5ff">28 routes · CORS · JSON logs</text>
+  <text x="393" y="108" text-anchor="middle" font-size="9"  fill="#e9d5ff">Throttle: 50 req/s · burst 100</text>
+  <text x="393" y="121" text-anchor="middle" font-size="8"  fill="#ddd6fe">JWT authorizer · Payload 2.0</text>
+
+  <!-- JWT Authorizer Lambda -->
+  <rect x="505" y="55" width="157" height="75" rx="5" fill="#DD3522"/>
+  <text x="583" y="79"  text-anchor="middle" font-size="12" font-weight="bold" fill="white">JWT Authorizer</text>
+  <text x="583" y="95"  text-anchor="middle" font-size="9"  fill="#fecaca">λ · 128 MB · 10s timeout</text>
+  <text x="583" y="108" text-anchor="middle" font-size="9"  fill="#fecaca">Validates Clerk JWT tokens</text>
+  <text x="583" y="121" text-anchor="middle" font-size="8"  fill="#fca5a5">5-min response cache TTL</text>
+
+  <!-- Clerk (external) -->
+  <rect x="677" y="55" width="104" height="75" rx="5" fill="#6366f1"/>
+  <text x="729" y="79"  text-anchor="middle" font-size="12" font-weight="bold" fill="white">Clerk</text>
+  <text x="729" y="95"  text-anchor="middle" font-size="10" fill="#e0e7ff">Auth Provider</text>
+  <text x="729" y="108" text-anchor="middle" font-size="9"  fill="#e0e7ff">External service</text>
+  <text x="729" y="121" text-anchor="middle" font-size="8"  fill="#c7d2fe">JWKS endpoint</text>
+
+  <!-- DynamoDB — spans rows 1 and 2 -->
+  <rect x="796" y="55" width="294" height="150" rx="5" fill="#3F48CC"/>
+  <text x="943" y="79"  text-anchor="middle" font-size="13" font-weight="bold" fill="white">Amazon DynamoDB</text>
+  <text x="943" y="96"  text-anchor="middle" font-size="10" fill="#c7d2fe">Single-table · On-demand billing</text>
+  <text x="943" y="111" text-anchor="middle" font-size="10" fill="#c7d2fe">PK + SK · 2 GSIs (GSI1, GSI2)</text>
+  <text x="943" y="125" text-anchor="middle" font-size="9"  fill="#a5b4fc">Users · Niches · Ads · Pages</text>
+  <text x="943" y="139" text-anchor="middle" font-size="9"  fill="#a5b4fc">CollectionRuns · SavedAds</text>
+  <text x="943" y="153" text-anchor="middle" font-size="9"  fill="#a5b4fc">PITR on · TTL attr · AES-256</text>
+  <text x="943" y="167" text-anchor="middle" font-size="9"  fill="#a5b4fc">$1.25/M writes · $0.25/M reads</text>
+  <text x="943" y="181" text-anchor="middle" font-size="8"  fill="#818cf8">$0.25/GB storage/month</text>
+  <text x="943" y="194" text-anchor="middle" font-size="8"  fill="#818cf8">Scale to billions of items</text>
+
+  <!-- ══════════════════════════════════════════════════
+       ROW 2  (y=145) — S3 SPA + 5 API Lambda functions
+       ══════════════════════════════════════════════════ -->
+
+  <!-- S3 Frontend Bucket -->
+  <rect x="133" y="145" width="148" height="60" rx="5" fill="#7AA116"/>
+  <text x="207" y="167" text-anchor="middle" font-size="11" font-weight="bold" fill="white">S3 (Frontend SPA)</text>
+  <text x="207" y="182" text-anchor="middle" font-size="9"  fill="#dcfce7">Versioned · Public blocked</text>
+  <text x="207" y="196" text-anchor="middle" font-size="9"  fill="#dcfce7">AES-256 · OAC-only policy</text>
+
+  <!-- λ auth -->
+  <rect x="298" y="145" width="78" height="60" rx="5" fill="#FF9900"/>
+  <text x="337" y="167" text-anchor="middle" font-size="11" font-weight="bold" fill="white">λ auth</text>
+  <text x="337" y="182" text-anchor="middle" font-size="9"  fill="#fff7e6">webhook · /me</text>
+  <text x="337" y="196" text-anchor="middle" font-size="8"  fill="#ffe0b2">Clerk sync</text>
+
+  <!-- λ niches -->
+  <rect x="386" y="145" width="78" height="60" rx="5" fill="#FF9900"/>
+  <text x="425" y="167" text-anchor="middle" font-size="11" font-weight="bold" fill="white">λ niches</text>
+  <text x="425" y="182" text-anchor="middle" font-size="9"  fill="#fff7e6">CRUD · stats</text>
+  <text x="425" y="196" text-anchor="middle" font-size="8"  fill="#ffe0b2">9 routes</text>
+
+  <!-- λ ads -->
+  <rect x="474" y="145" width="78" height="60" rx="5" fill="#FF9900"/>
+  <text x="513" y="167" text-anchor="middle" font-size="11" font-weight="bold" fill="white">λ ads</text>
+  <text x="513" y="182" text-anchor="middle" font-size="9"  fill="#fff7e6">search · detail</text>
+  <text x="513" y="196" text-anchor="middle" font-size="8"  fill="#ffe0b2">6 routes</text>
+
+  <!-- λ saved -->
+  <rect x="562" y="145" width="78" height="60" rx="5" fill="#FF9900"/>
+  <text x="601" y="167" text-anchor="middle" font-size="11" font-weight="bold" fill="white">λ saved</text>
+  <text x="601" y="182" text-anchor="middle" font-size="9"  fill="#fff7e6">save · tags</text>
+  <text x="601" y="196" text-anchor="middle" font-size="8"  fill="#ffe0b2">4 routes</text>
+
+  <!-- λ collect_trigger -->
+  <rect x="650" y="145" width="132" height="60" rx="5" fill="#FF9900"/>
+  <text x="716" y="167" text-anchor="middle" font-size="11" font-weight="bold" fill="white">λ trigger</text>
+  <text x="716" y="182" text-anchor="middle" font-size="9"  fill="#fff7e6">POST /collect</text>
+  <text x="716" y="196" text-anchor="middle" font-size="8"  fill="#ffe0b2">async invoke</text>
+
+  <!-- Row 2 shared spec note -->
+  <text x="513" y="216" text-anchor="middle" font-size="9" fill="#666" font-style="italic">All API Lambdas: 256 MB · 15s · python3.11 · shared layer</text>
+
+  <!-- ══════════════════════════════════════════════════
+       ROW 3  (y=228) — Background collection pipeline
+       ══════════════════════════════════════════════════ -->
+
+  <!-- EventBridge Scheduler -->
+  <rect x="10" y="228" width="147" height="80" rx="5" fill="#E7157B"/>
+  <text x="83" y="251" text-anchor="middle" font-size="11" font-weight="bold" fill="white">EventBridge</text>
+  <text x="83" y="265" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Scheduler</text>
+  <text x="83" y="281" text-anchor="middle" font-size="9"  fill="#fce7f3">cron(0 */3 * * ? *)</text>
+  <text x="83" y="295" text-anchor="middle" font-size="9"  fill="#fce7f3">Every 3h · 15min jitter</text>
+  <text x="83" y="304" text-anchor="middle" font-size="8"  fill="#fbcfe8">1 retry · max-age 5min</text>
+
+  <!-- λ collect_scheduler -->
+  <rect x="177" y="228" width="158" height="80" rx="5" fill="#FF9900"/>
+  <text x="256" y="251" text-anchor="middle" font-size="11" font-weight="bold" fill="white">λ collect_scheduler</text>
+  <text x="256" y="265" text-anchor="middle" font-size="9"  fill="#fff7e6">Lists opt-in niches</text>
+  <text x="256" y="279" text-anchor="middle" font-size="9"  fill="#fff7e6">Checks interval per niche</text>
+  <text x="256" y="293" text-anchor="middle" font-size="9"  fill="#fff7e6">Fan-out per keyword</text>
+  <text x="256" y="302" text-anchor="middle" font-size="8"  fill="#ffe0b2">256 MB · 60s timeout</text>
+
+  <!-- λ collect_worker -->
+  <rect x="355" y="228" width="210" height="80" rx="5" fill="#FF9900"/>
+  <text x="460" y="251" text-anchor="middle" font-size="12" font-weight="bold" fill="white">λ collect_worker</text>
+  <text x="460" y="265" text-anchor="middle" font-size="9"  fill="#fff7e6">Calls Meta API · Parses ads</text>
+  <text x="460" y="279" text-anchor="middle" font-size="9"  fill="#fff7e6">Upserts Ads / Pages / Runs</text>
+  <text x="460" y="293" text-anchor="middle" font-size="9"  fill="#fff7e6">512 MB · 15 min · concurrency=5</text>
+  <text x="460" y="302" text-anchor="middle" font-size="8"  fill="#ffe0b2">2 retries on fail → SQS DLQ</text>
+
+  <!-- Meta Ad Library API (external) -->
+  <rect x="583" y="228" width="195" height="80" rx="5" fill="#6b7280"/>
+  <text x="680" y="251" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Meta Ad Library</text>
+  <text x="680" y="265" text-anchor="middle" font-size="10" fill="#f3f4f6">graph.facebook.com</text>
+  <text x="680" y="279" text-anchor="middle" font-size="9"  fill="#e5e7eb">/ads_archive endpoint</text>
+  <text x="680" y="293" text-anchor="middle" font-size="9"  fill="#e5e7eb">~200 req/hour rate limit</text>
+  <text x="680" y="305" text-anchor="middle" font-size="8"  fill="#d1d5db">Token from Secrets Manager</text>
+
+  <!-- Secrets Manager -->
+  <rect x="796" y="228" width="140" height="80" rx="5" fill="#DD3522"/>
+  <text x="866" y="251" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Secrets</text>
+  <text x="866" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Manager</text>
+  <text x="866" y="281" text-anchor="middle" font-size="9"  fill="#fecaca">meta-api: access_token</text>
+  <text x="866" y="295" text-anchor="middle" font-size="9"  fill="#fecaca">clerk: keys + webhook</text>
+  <text x="866" y="304" text-anchor="middle" font-size="8"  fill="#fca5a5">$0.40/secret/month</text>
+
+  <!-- SQS Dead Letter Queue -->
+  <rect x="950" y="228" width="140" height="80" rx="5" fill="#E7157B"/>
+  <text x="1020" y="251" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SQS Dead</text>
+  <text x="1020" y="265" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Letter Queue</text>
+  <text x="1020" y="281" text-anchor="middle" font-size="9"  fill="#fce7f3">Worker failure capture</text>
+  <text x="1020" y="295" text-anchor="middle" font-size="9"  fill="#fce7f3">14-day retention</text>
+  <text x="1020" y="305" text-anchor="middle" font-size="8"  fill="#fbcfe8">Ops review + replay</text>
+
+  <!-- ══════════════════════════════════════════════════
+       ROW 4  (y=325) — Observability + Infrastructure
+       ══════════════════════════════════════════════════ -->
+
+  <!-- CloudWatch Logs -->
+  <rect x="10"  y="325" width="155" height="70" rx="5" fill="#00A4A6"/>
+  <text x="87"  y="345" text-anchor="middle" font-size="11" font-weight="bold" fill="white">CloudWatch Logs</text>
+  <text x="87"  y="360" text-anchor="middle" font-size="9"  fill="#ccfbf1">9 log groups · 7-day</text>
+  <text x="87"  y="374" text-anchor="middle" font-size="9"  fill="#ccfbf1">All Lambda + API GW</text>
+  <text x="87"  y="385" text-anchor="middle" font-size="8"  fill="#a7f3d0">JSON access logs</text>
+
+  <!-- CloudWatch Alarms -->
+  <rect x="178" y="325" width="155" height="70" rx="5" fill="#00A4A6"/>
+  <text x="255" y="345" text-anchor="middle" font-size="11" font-weight="bold" fill="white">CloudWatch Alarms</text>
+  <text x="255" y="360" text-anchor="middle" font-size="9"  fill="#ccfbf1">4 alarms: DDB throttles</text>
+  <text x="255" y="374" text-anchor="middle" font-size="9"  fill="#ccfbf1">Worker errors · DLQ depth</text>
+  <text x="255" y="385" text-anchor="middle" font-size="8"  fill="#a7f3d0">$0.10/alarm/month</text>
+
+  <!-- SNS -->
+  <rect x="346" y="325" width="95" height="70" rx="5" fill="#E7157B"/>
+  <text x="393" y="345" text-anchor="middle" font-size="12" font-weight="bold" fill="white">SNS</text>
+  <text x="393" y="361" text-anchor="middle" font-size="9"  fill="#fce7f3">Alert topic</text>
+  <text x="393" y="375" text-anchor="middle" font-size="9"  fill="#fce7f3">Email notify</text>
+  <text x="393" y="386" text-anchor="middle" font-size="8"  fill="#fbcfe8">on-call team</text>
+
+  <!-- IAM -->
+  <rect x="454" y="325" width="95" height="70" rx="5" fill="#DD3522"/>
+  <text x="501" y="345" text-anchor="middle" font-size="12" font-weight="bold" fill="white">IAM</text>
+  <text x="501" y="361" text-anchor="middle" font-size="9"  fill="#fecaca">3 Lambda roles</text>
+  <text x="501" y="375" text-anchor="middle" font-size="9"  fill="#fecaca">Least privilege</text>
+  <text x="501" y="386" text-anchor="middle" font-size="8"  fill="#fca5a5">Free service</text>
+
+  <!-- Lambda Layer -->
+  <rect x="562" y="325" width="150" height="70" rx="5" fill="#FF9900"/>
+  <text x="637" y="345" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Lambda Layer</text>
+  <text x="637" y="360" text-anchor="middle" font-size="9"  fill="#fff7e6">Shared · python3.11</text>
+  <text x="637" y="374" text-anchor="middle" font-size="9"  fill="#fff7e6">PyJWT · boto3 · svix</text>
+  <text x="637" y="385" text-anchor="middle" font-size="8"  fill="#ffe0b2">All 8 functions use it</text>
+
+  <!-- S3 Lambda Packages -->
+  <rect x="725" y="325" width="153" height="70" rx="5" fill="#7AA116"/>
+  <text x="801" y="345" text-anchor="middle" font-size="11" font-weight="bold" fill="white">S3 Lambda pkgs</text>
+  <text x="801" y="360" text-anchor="middle" font-size="9"  fill="#dcfce7">Versioned .zip files</text>
+  <text x="801" y="374" text-anchor="middle" font-size="9"  fill="#dcfce7">Layer + 8 functions</text>
+  <text x="801" y="385" text-anchor="middle" font-size="8"  fill="#bbf7d0">30-day lifecycle rule</text>
+
+  <!-- Terraform IaC -->
+  <rect x="891" y="325" width="199" height="70" rx="5" fill="#5C4EE5"/>
+  <text x="990" y="345" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Terraform IaC</text>
+  <text x="990" y="360" text-anchor="middle" font-size="9"  fill="#e0e7ff">~12 .tf files · v1.5+</text>
+  <text x="990" y="374" text-anchor="middle" font-size="9"  fill="#e0e7ff">S3 + DynamoDB backend</text>
+  <text x="990" y="385" text-anchor="middle" font-size="8"  fill="#c7d2fe">Dev + Prod workspaces</text>
+
+  <!-- ══════════════════════════════════════════════════
+       ARROWS
+       ══════════════════════════════════════════════════ -->
+
+  <!-- 1. Browser → CloudFront -->
+  <line x1="118" y1="92" x2="131" y2="92" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="124" y="88" text-anchor="middle" font-size="8" fill="#555">HTTPS</text>
+
+  <!-- 2. CloudFront ↓ S3 Frontend (OAC) -->
+  <line x1="207" y1="130" x2="207" y2="143" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="215" y="141" font-size="8" fill="#555">OAC</text>
+
+  <!-- 3. CloudFront → API Gateway -->
+  <line x1="281" y1="92" x2="296" y2="92" stroke="#8C4FFF" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="289" y="88" text-anchor="middle" font-size="8" fill="#8C4FFF">API</text>
+
+  <!-- 4. API Gateway → JWT Authorizer -->
+  <line x1="488" y1="92" x2="503" y2="92" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- 5. Clerk → JWT Authorizer (JWKS, dashed) -->
+  <line x1="677" y1="92" x2="664" y2="92" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ahi)"/>
+  <text x="670" y="88" text-anchor="middle" font-size="8" fill="#6366f1">JWKS</text>
+
+  <!-- 6. API Gateway → Lambda functions (bus bar pattern) -->
+  <line x1="393" y1="130" x2="393" y2="142" stroke="#555" stroke-width="1"/>
+  <line x1="337" y1="142" x2="782" y2="142" stroke="#555" stroke-width="1"/>
+  <line x1="337" y1="142" x2="337" y2="143" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="425" y1="142" x2="425" y2="143" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="513" y1="142" x2="513" y2="143" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="601" y1="142" x2="601" y2="143" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="716" y1="142" x2="716" y2="143" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- 7. Lambda group → DynamoDB (API lambdas read/write) -->
+  <line x1="782" y1="175" x2="794" y2="175" stroke="#3F48CC" stroke-width="2" marker-end="url(#ahb)"/>
+  <text x="788" y="171" text-anchor="middle" font-size="8" fill="#3F48CC">R/W</text>
+
+  <!-- 8. collect_trigger → collect_worker (async, dashed) -->
+  <path d="M716,205 C716,220 460,220 460,226" fill="none" stroke="#FF9900" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#aho)"/>
+  <text x="608" y="216" text-anchor="middle" font-size="8" fill="#FF9900">async invoke</text>
+
+  <!-- 9. EventBridge → collect_scheduler -->
+  <line x1="157" y1="268" x2="175" y2="268" stroke="#E7157B" stroke-width="1.5" marker-end="url(#ahp)"/>
+
+  <!-- 10. collect_scheduler → collect_worker (async, dashed) -->
+  <line x1="335" y1="268" x2="353" y2="268" stroke="#FF9900" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#aho)"/>
+  <text x="344" y="263" text-anchor="middle" font-size="8" fill="#FF9900">async</text>
+
+  <!-- 11. collect_worker → Meta API (HTTPS) -->
+  <line x1="565" y1="268" x2="581" y2="268" stroke="#555" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="573" y="263" text-anchor="middle" font-size="8" fill="#555">HTTPS</text>
+
+  <!-- 12. collect_worker → DynamoDB (curved, upserts) -->
+  <path d="M565,248 C670,230 760,215 793,195" fill="none" stroke="#3F48CC" stroke-width="1.5" marker-end="url(#ahb)"/>
+  <text x="687" y="222" text-anchor="middle" font-size="8" fill="#3F48CC" transform="rotate(-10,687,222)">upsert</text>
+
+  <!-- 13. collect_worker → SQS DLQ (on failure, dashed) -->
+  <path d="M565,283 C700,295 855,285 948,278" fill="none" stroke="#E7157B" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ahp)"/>
+  <text x="760" y="292" text-anchor="middle" font-size="8" fill="#E7157B">on failure</text>
+
+  <!-- 14. CloudWatch Alarms → SNS -->
+  <line x1="333" y1="360" x2="344" y2="360" stroke="#E7157B" stroke-width="1.5" marker-end="url(#ahp)"/>
+
+</svg>

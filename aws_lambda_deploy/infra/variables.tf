@@ -111,6 +111,12 @@ variable "custom_domain" {
   default     = ""
 }
 
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN for custom domain (must be in us-east-1, required when custom_domain is set)"
+  type        = string
+  default     = ""
+}
+
 variable "cloudfront_price_class" {
   description = "CloudFront price class"
   type        = string

@@ -80,6 +80,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
   price_class         = var.cloudfront_price_class
   comment             = "${local.name_prefix} frontend distribution"
+  aliases             = var.custom_domain != "" ? [var.custom_domain, "www.${var.custom_domain}"] : []
 
   # S3 Origin with OAC
   origin {
@@ -147,11 +148,12 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
-  # SSL/TLS: Use CloudFront default cert (*.cloudfront.net)
-  # Custom domain + ACM cert can be added later
+  # SSL/TLS: default CloudFront cert for *.cloudfront.net, or ACM cert for custom domain
   viewer_certificate {
     cloudfront_default_certificate = var.custom_domain == "" ? true : false
-    minimum_protocol_version       = "TLSv1.2_2021"
+    acm_certificate_arn            = var.custom_domain != "" ? var.acm_certificate_arn : null
+    ssl_support_method             = var.custom_domain != "" ? "sni-only" : null
+    minimum_protocol_version       = var.custom_domain != "" ? "TLSv1.2_2021" : "TLSv1"
   }
 
   tags = {

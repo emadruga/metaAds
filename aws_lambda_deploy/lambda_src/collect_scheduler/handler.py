@@ -57,9 +57,25 @@ def _should_collect(niche, latest_run) -> bool:
 
     completed_at = latest_run.completed_at
     if not completed_at:
-        # Run never finished — don't start another one yet
+        # Run never finished — check if it's stuck (Lambda max runtime is 15 min)
+        STUCK_TIMEOUT_HOURS = 2 / 60  # 2 minutes
+        try:
+            started_ts = datetime.fromisoformat(
+                latest_run.started_at.replace("Z", "+00:00")
+            )
+            age_hours = (datetime.now(tz=timezone.utc) - started_ts).total_seconds() / 3600
+            if age_hours > STUCK_TIMEOUT_HOURS:
+                logger.warning(
+                    f"Niche {niche.id}: run {latest_run.id} has been in-flight "
+                    f"for {age_hours:.1f}h (started_at={latest_run.started_at}). "
+                    "Treating as timed out — allowing new collection."
+                )
+                return True
+        except (ValueError, AttributeError):
+            pass  # Can't parse started_at — fall through to skip
+
         logger.info(
-            f"Niche {niche.id} has an in-flight or incomplete run "
+            f"Niche {niche.id} has an in-flight run "
             f"(run_id={latest_run.id}), skipping."
         )
         return False
@@ -137,6 +153,25 @@ def handler(event: dict, context) -> dict:
         if not _should_collect(niche, latest_run):
             total_skipped += 1
             continue
+
+        # If the previous run is stuck (no completed_at), mark it as error
+        # so the history is clean before we create the new run.
+        if latest_run and not latest_run.completed_at:
+            try:
+                CollectionRepo.mark_error(
+                    latest_run.niche_id,
+                    latest_run.id,
+                    latest_run.started_at,
+                    "Timed out: run exceeded 2-minute in-flight threshold; "
+                    "marked as error by collect_scheduler.",
+                )
+                logger.warning(
+                    f"Marked stuck run {latest_run.id} as error for niche {niche.id}."
+                )
+            except Exception as exc:
+                logger.error(
+                    f"Could not mark stuck run {latest_run.id} as error: {exc}"
+                )
 
         logger.info(
             f"Scheduling collection for niche {niche.id} "
