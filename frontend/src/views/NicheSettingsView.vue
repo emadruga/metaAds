@@ -105,6 +105,25 @@
             <small>Comma-separated country codes (ISO 2-letter)</small>
           </div>
 
+          <div class="form-group form-group--inline">
+            <div class="inline-label-group">
+              <label for="auto-collect" class="inline-label">Auto-Collect</label>
+              <small>Automatically collect ads on a daily schedule</small>
+            </div>
+            <label class="toggle-switch" :class="{ updating: saving }">
+              <input
+                id="auto-collect"
+                type="checkbox"
+                v-model="form.auto_collect_enabled"
+                :disabled="saving"
+              />
+              <span class="slider">
+                <span class="slider-off">Off</span>
+                <span class="slider-on">On</span>
+              </span>
+            </label>
+          </div>
+
           <div class="form-group">
             <label>Default Platforms</label>
             <div class="checkbox-group">
@@ -248,7 +267,8 @@ const form = ref({
   description: '',
   icon: '📊',
   color: '#8B5CF6',
-  platforms: ['instagram']
+  platforms: ['instagram'],
+  auto_collect_enabled: false,
 })
 
 const keywordsInput = ref('')
@@ -304,7 +324,8 @@ async function loadNicheData() {
         description: niche.description || '',
         icon: niche.icon || '📊',
         color: niche.color || '#8B5CF6',
-        platforms: Array.isArray(niche.platforms) ? niche.platforms : ['instagram']
+        platforms: Array.isArray(niche.platforms) ? niche.platforms : ['instagram'],
+        auto_collect_enabled: niche.auto_collect_enabled || false,
       }
 
       // Convert arrays to comma-separated strings
@@ -357,7 +378,8 @@ async function handleSave() {
       color: form.value.color || '#8B5CF6',
       keywords,
       countries,
-      platforms: form.value.platforms
+      platforms: form.value.platforms,
+      auto_collect_enabled: form.value.auto_collect_enabled,
     }
 
     const updatedNiche = await nichesStore.updateNiche(currentSlug.value, updateData)
@@ -548,6 +570,104 @@ textarea.input {
     color: var(--color-primary);
   }
 }
+
+// ---- Auto-collect toggle (inline form group) ----
+
+.form-group--inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+}
+
+.inline-label-group {
+  label { margin-bottom: 0; }
+  small { display: block; margin-top: var(--spacing-1); }
+}
+
+.inline-label {
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  &.updating {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  width: 72px;
+  height: 26px;
+  background-color: var(--color-gray-200);
+  border-radius: var(--radius-full);
+  position: relative;
+  transition: background-color var(--transition-fast);
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform var(--transition-fast);
+    z-index: 1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.slider-off,
+.slider-on {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  transition: opacity var(--transition-fast);
+  user-select: none;
+}
+
+.slider-off {
+  right: 7px;
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+.slider-on {
+  left: 7px;
+  color: white;
+  opacity: 0;
+}
+
+input:checked + .slider {
+  background-color: var(--color-primary-600);
+
+  &::before {
+    transform: translateX(46px);
+  }
+
+  .slider-off { opacity: 0; }
+  .slider-on  { opacity: 1; }
+}
+
+// ---- Keyword counter ----
 
 .keyword-count {
   font-weight: 400;
