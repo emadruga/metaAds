@@ -65,7 +65,9 @@ resource "aws_lambda_function" "authorizer" {
   layers = [aws_lambda_layer_version.shared.arn]
 
   environment {
-    variables = local.common_env
+    variables = merge(local.common_env, {
+      ADMIN_USER_IDS = var.admin_user_ids
+    })
   }
 
   depends_on = [

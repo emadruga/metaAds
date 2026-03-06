@@ -149,12 +149,32 @@ def handler(event: dict, context) -> dict:
             logger.warning("JWT missing 'sub' claim")
             return _deny()
 
-        logger.info(f"Authorizer ALLOW for user={user_id}")
+        # Extract role from Clerk custom JWT template claim (metadata.role).
+        # This only works if the Clerk JWT template includes the metadata claim.
+        metadata = payload.get("metadata") or {}
+        role = metadata.get("role", "user") if isinstance(metadata, dict) else "user"
+
+        # Fallback: ADMIN_USER_IDS env var (comma-separated Clerk user IDs).
+        # Grants admin without needing a custom Clerk JWT template.
+        if role != "admin":
+            admin_ids_raw = os.environ.get("ADMIN_USER_IDS", "")
+            if admin_ids_raw:
+                admin_ids = {uid.strip() for uid in admin_ids_raw.split(",") if uid.strip()}
+                if user_id in admin_ids:
+                    role = "admin"
+
+        # Extract email — Clerk puts it in the "email" claim when the JWT
+        # template includes {{ user.primary_email_address }}
+        email = payload.get("email", "")
+
+        logger.info(f"Authorizer ALLOW for user={user_id} role={role}")
         return {
             "isAuthorized": True,
             "context": {
                 "user_id": user_id,
                 "session_id": payload.get("sid", ""),
+                "role": role,
+                "user_email": email,
             },
         }
 

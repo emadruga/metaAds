@@ -36,3 +36,6 @@ cors_allow_origins = [
 # Monitoring
 cloudwatch_log_retention_days = 7
 alarm_email                   = "emadruga@gmail.com"
+
+# Admin users (Clerk user IDs) — fallback when JWT template is not configured
+admin_user_ids = "user_392VMP1wtMQyC9ZZLG8FgeFqxAq"

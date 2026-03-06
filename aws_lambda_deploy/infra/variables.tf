@@ -149,6 +149,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "admin_user_ids" {
+  description = "Comma-separated list of Clerk user IDs granted admin role (fallback when JWT template is not configured)"
+  type        = string
+  default     = ""
+}
+
 locals {
   common_tags = merge(var.tags, {
     Project     = var.project_name
