@@ -74,6 +74,12 @@ const routes = [
     component: () => import('@/views/AdminCollectionView.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/admin/global-history',
+    name: 'AdminGlobalHistory',
+    component: () => import('@/views/GlobalHistoryView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
 
   // Catch-all redirect
   {
@@ -122,6 +128,17 @@ router.beforeEach(async (to, _from, next) => {
         name: 'SignIn',
         query: { redirect: to.fullPath }
       })
+    } else if (to.meta.requiresAdmin) {
+      // Admin-only route — check role from publicMetadata via useUser()
+      // (works without any JWT template config, unlike sessionClaims.metadata)
+      const { useUser } = await import('@clerk/vue')
+      const { user } = useUser()
+      const role = user.value?.publicMetadata?.role
+      if (role !== 'admin') {
+        next({ name: 'NicheSelector' })
+      } else {
+        next()
+      }
     } else if (
       !requiresAuth &&
       isSignedIn.value &&

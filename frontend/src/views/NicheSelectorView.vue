@@ -8,6 +8,9 @@
         <router-link to="/admin/collection-health" class="nav-link">
           📡 Collection Health
         </router-link>
+        <router-link v-if="isAdmin" to="/admin/global-history" class="nav-link">
+          🌐 Global History
+        </router-link>
       </nav>
       <div class="header-right">
         <!-- In dev mode, show simple user badge instead of Clerk -->
@@ -61,8 +64,8 @@
 </template>
 
 <script setup>
-  import { onMounted, computed } from 'vue'
-  import { UserButton } from '@clerk/vue'
+  import { onMounted, computed, ref, watch } from 'vue'
+  import { UserButton, useUser } from '@clerk/vue'
   import { useNichesStore } from '@/stores/niches'
   import { devMode } from '@/services/api'
   import NicheCard from '@/components/NicheCard.vue'
@@ -70,12 +73,23 @@
   const nichesStore = useNichesStore()
   const isDevMode = devMode
 
+  // In dev mode there is no Clerk — always show admin links
+  const isAdmin = ref(isDevMode)
+
+  // Must be called at setup time (not inside onMounted), same pattern as App.vue.
+  // useUser().user is a reactive ref; watch keeps isAdmin in sync as Clerk loads.
+  if (!isDevMode) {
+    const { user } = useUser()
+    watch(user, (u) => {
+      isAdmin.value = u?.publicMetadata?.role === 'admin'
+    }, { immediate: true })
+  }
+
   const niches = computed(() => nichesStore.niches)
   const loading = computed(() => nichesStore.loading)
   const error = computed(() => nichesStore.error)
 
   onMounted(() => {
-    // API interceptor handles waiting for Clerk to be ready
     nichesStore.fetchNiches()
   })
 </script>

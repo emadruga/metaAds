@@ -127,5 +127,7 @@ export const authApi = {
 
 export const collectApi = {
   getHealth: () => api.get('/admin/collection/health'),
-  getRuns: (slug, params) => api.get(`/niches/${slug}/collection-runs`, { params })
+  getRuns: (slug, params) => api.get(`/niches/${slug}/collection-runs`, { params }),
+  getGlobalHistory: (params = {}) => api.get('/admin/global-history', { params }),
+  getRateLimitHistory: (hours = 48) => api.get(`/admin/rate-limit/history?hours=${hours}`)
 }
