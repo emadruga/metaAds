@@ -51,6 +51,7 @@ resource "aws_iam_role_policy" "lambda_api_dynamodb" {
           "dynamodb:UpdateItem",
           "dynamodb:DeleteItem",
           "dynamodb:Query",
+          "dynamodb:Scan",
           "dynamodb:BatchWriteItem",
           "dynamodb:BatchGetItem"
         ]

@@ -297,12 +297,28 @@ resource "aws_apigatewayv2_route" "niches_collection_run_status" {
 }
 
 # -----------------------------------------------------------------------------
-# Routes: Collection health (admin)
+# Routes: Admin endpoints (collection health, global history, rate limits)
 # -----------------------------------------------------------------------------
 
 resource "aws_apigatewayv2_route" "collection_health" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /api/admin/collection/health"
+  target             = "integrations/${aws_apigatewayv2_integration.niches.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "admin_global_history" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /api/admin/global-history"
+  target             = "integrations/${aws_apigatewayv2_integration.niches.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "admin_rate_limit_history" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /api/admin/rate-limit/history"
   target             = "integrations/${aws_apigatewayv2_integration.niches.id}"
   authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
