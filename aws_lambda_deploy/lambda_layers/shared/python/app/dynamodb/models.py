@@ -557,6 +557,12 @@ class CollectionRun:
     error_message: Optional[str] = None
     started_at: str = ""
     completed_at: Optional[str] = None
+    # Identity fields — who triggered this run and which niche
+    user_id: str = ""
+    user_email: str = ""
+    niche_name: str = ""
+    # API quota tracking
+    api_requests_made: int = 0
 
     VALID_STATUSES = {"pending", "running", "completed", "error"}
 
@@ -586,6 +592,10 @@ class CollectionRun:
             "error_message": self.error_message or "",
             "started_at": self.started_at,
             "completed_at": self.completed_at or "",
+            "user_id": self.user_id,
+            "user_email": self.user_email,
+            "niche_name": self.niche_name,
+            "api_requests_made": self.api_requests_made,
         }
 
     @classmethod
@@ -604,6 +614,10 @@ class CollectionRun:
             error_message=item.get("error_message") or None,
             started_at=item.get("started_at", ""),
             completed_at=item.get("completed_at") or None,
+            user_id=item.get("user_id", ""),
+            user_email=item.get("user_email", ""),
+            niche_name=item.get("niche_name", ""),
+            api_requests_made=int(item.get("api_requests_made") or 0),
         )
 
     def to_dict(self) -> dict:
@@ -618,6 +632,10 @@ class CollectionRun:
             "error_message": self.error_message,
             "started_at": self.started_at,
             "completed_at": self.completed_at,
+            "user_id": self.user_id,
+            "user_email": self.user_email,
+            "niche_name": self.niche_name,
+            "api_requests_made": self.api_requests_made,
         }
 
 

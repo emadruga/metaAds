@@ -11,6 +11,7 @@ Responsibilities:
     4. Parse each raw ad with AdParser
     5. Upsert each ad + page/niche_page via DynamoDB repos
     6. Mark run as "completed" (or "error" on failure)
+    7. Increment hourly rate-limit counter in DynamoDB
 
 Environment variables:
     DYNAMODB_TABLE   — DynamoDB table name
@@ -26,6 +27,7 @@ Input event (JSON payload from collect_trigger):
         "limit":      int,
         "countries":  list[str],
         "platforms":  list[str],
+        "user_email": str,          # optional — who triggered the run
     }
 """
 
@@ -41,6 +43,7 @@ import boto3
 from app.dynamodb.ad_repo import AdRepo
 from app.dynamodb.collection_repo import CollectionRepo
 from app.dynamodb.page_repo import PageRepo
+from app.dynamodb.rate_limit_repo import RateLimitRepo
 from app.dynamodb.models import Ad, Page
 from app.utils.ids import generate_uuid, now_iso8601
 
@@ -92,6 +95,8 @@ def handler(event: dict, context) -> None:
     Collection worker — no HTTP response needed (async invocation).
     Logs progress; updates CollectionRun status in DynamoDB.
     """
+    from datetime import datetime, timezone
+
     niche_id   = event.get("niche_id", "")
     run_id     = event.get("run_id", "")
     started_at = event.get("started_at", now_iso8601())
@@ -99,6 +104,7 @@ def handler(event: dict, context) -> None:
     limit      = int(event.get("limit", 50))
     countries  = event.get("countries") or ["US"]
     platforms  = event.get("platforms") or ["instagram"]
+    user_email = event.get("user_email", "")
 
     logger.info(
         f"collect_worker started: niche={niche_id} run={run_id} "
@@ -112,9 +118,10 @@ def handler(event: dict, context) -> None:
         logger.error(f"Failed to mark run as running: {exc}")
         return
 
-    ads_found   = 0
-    ads_new     = 0
-    ads_updated = 0
+    ads_found      = 0
+    ads_new        = 0
+    ads_updated    = 0
+    requests_made  = 0
 
     try:
         # Fetch Meta API token
@@ -123,14 +130,14 @@ def handler(event: dict, context) -> None:
         parser = _get_parser()
 
         logger.info(f"Calling Meta API: search_terms={keyword!r} countries={countries} platforms={platforms}")
-        raw_ads = api.search_ads(
+        raw_ads, requests_made = api.search_ads(
             search_terms=keyword,
             countries=countries,
             platforms=platforms,
             limit=limit,
         )
         ads_found = len(raw_ads)
-        logger.info(f"Meta API returned {ads_found} ads")
+        logger.info(f"Meta API returned {ads_found} ads using {requests_made} HTTP requests")
 
         # Process each raw ad
         for raw in raw_ads:
@@ -199,7 +206,7 @@ def handler(event: dict, context) -> None:
         # Count total ads in the niche after this run
         total_ads_after = AdRepo.count_for_niche(niche_id)
 
-        # Mark run completed
+        # Mark run completed — include API requests count
         CollectionRepo.mark_completed(
             niche_id=niche_id,
             run_id=run_id,
@@ -208,11 +215,31 @@ def handler(event: dict, context) -> None:
             ads_new=ads_new,
             ads_updated=ads_updated,
             total_ads_after=total_ads_after,
+            api_requests_made=requests_made,
         )
         logger.info(
             f"collect_worker completed: run={run_id} "
-            f"found={ads_found} new={ads_new} updated={ads_updated}"
+            f"found={ads_found} new={ads_new} updated={ads_updated} "
+            f"api_requests={requests_made}"
         )
+
+        # ---------------------------------------------------------------
+        # Hourly rate-limit tracking
+        # ---------------------------------------------------------------
+        if requests_made > 0:
+            hour_str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H")
+            try:
+                new_total = RateLimitRepo.increment(hour_str, requests_made)
+                logger.info(f"Rate limit counter: hour={hour_str} total={new_total}")
+
+                # Alert at 80% threshold (160/200)
+                if new_total >= 160:
+                    window = RateLimitRepo.get(hour_str)
+                    if window and not window.get("alert_sent"):
+                        RateLimitRepo.mark_alert_sent(hour_str)
+                        _send_rate_limit_alert(new_total, hour_str)
+            except Exception as exc:
+                logger.warning(f"Rate limit tracking failed (non-fatal): {exc}")
 
     except Exception as exc:
         logger.error(f"collect_worker fatal error: {exc}", exc_info=True)
@@ -220,6 +247,35 @@ def handler(event: dict, context) -> None:
             CollectionRepo.mark_error(niche_id, run_id, started_at, str(exc))
         except Exception as inner:
             logger.error(f"Failed to mark run as error: {inner}")
+
+
+# ---------------------------------------------------------------------------
+# Rate-limit alert
+# ---------------------------------------------------------------------------
+
+def _send_rate_limit_alert(total: int, hour_str: str) -> None:
+    """Publish a rate-limit warning to the SNS alarms topic (best-effort)."""
+    topic_arn = os.environ.get("SNS_ALARM_TOPIC_ARN")
+    if not topic_arn:
+        logger.warning("SNS_ALARM_TOPIC_ARN not set — skipping rate limit alert")
+        return
+    try:
+        region = os.environ.get("AWS_REGION", "us-east-1")
+        sns = boto3.client("sns", region_name=region)
+        sns.publish(
+            TopicArn=topic_arn,
+            Subject=f"[MetaAds] Rate limit warning — {total}/200 requests hour {hour_str}",
+            Message=(
+                f"MetaAds rate limit warning\n\n"
+                f"Hour: {hour_str} UTC\n"
+                f"Requests used: {total} / 200\n"
+                f"Threshold: 160 (80%)\n\n"
+                f"Automatic collections may fail if the limit is reached."
+            ),
+        )
+        logger.info(f"Rate limit alert sent for hour={hour_str} total={total}")
+    except Exception as exc:
+        logger.error(f"Failed to send rate limit alert: {exc}")
 
 
 # ---------------------------------------------------------------------------

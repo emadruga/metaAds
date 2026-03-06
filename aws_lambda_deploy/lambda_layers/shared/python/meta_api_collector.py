@@ -79,6 +79,7 @@ class MetaAdLibraryAPI:
         url = f"{self.base_url}/ads_archive"
         max_retries = 3
         retry_delay = 2  # Start with 2 seconds
+        requests_made = 0  # Count actual HTTP requests for rate-limit tracking
 
         while len(all_ads) < limit:
             # Rate limiting
@@ -87,6 +88,7 @@ class MetaAdLibraryAPI:
             for attempt in range(max_retries):
                 try:
                     response = requests.get(url, params=params, timeout=30)
+                    requests_made += 1
                     response.raise_for_status()
                     data = response.json()
 
@@ -118,6 +120,17 @@ class MetaAdLibraryAPI:
                             # Final attempt failed - raise user-friendly error
                             print(f"Meta API 500 error after {max_retries} attempts | Body: {error_body}")
                             raise Exception("Meta Ad Library is temporarily unavailable. Please try again in a few minutes.")
+                    elif e.response is not None and e.response.status_code == 400:
+                        # Check for rate limit error code 613
+                        try:
+                            body = e.response.json()
+                            code = body.get("error", {}).get("code")
+                            if code == 613:
+                                raise Exception("Meta API rate limit exceeded. Too many requests this hour. Try again later.")
+                        except (ValueError, AttributeError):
+                            pass
+                        print(f"Request error: Status 400 | Body: {e.response.text[:500]}")
+                        raise Exception("Meta API error: 400")
                     else:
                         # Non-500 error - don't retry, just log and raise
                         if hasattr(e, 'response') and e.response is not None:
@@ -129,7 +142,7 @@ class MetaAdLibraryAPI:
                     print(f"Network error: {type(e).__name__} - {str(e)[:200]}")
                     raise Exception("Network error connecting to Meta Ad Library. Please check your connection and try again.")
 
-        return all_ads[:limit]
+        return all_ads[:limit], requests_made
 
     def get_ads_by_page(
         self,

@@ -10,6 +10,9 @@ Routes (HTTP API v2 payload format 2.0):
     GET    /api/niches/{slug}/stats       get_niche_stats
     POST   /api/niches/{slug}/collect     trigger_collection  → returns 202, async-invokes worker
     GET    /api/niches/{slug}/collection-runs/{run_id}   get_collection_run
+    GET    /api/admin/collection/health   get_collection_health  (all users)
+    GET    /api/admin/global-history      get_global_history     (admin only)
+    GET    /api/admin/rate-limit/history  get_rate_limit_history (admin only)
 
 Environment variables:
     DYNAMODB_TABLE        — DynamoDB table name
@@ -29,6 +32,7 @@ import boto3
 from app.dynamodb.niche_repo import NicheRepo
 from app.dynamodb.collection_repo import CollectionRepo
 from app.dynamodb.ad_repo import AdRepo
+from app.dynamodb.rate_limit_repo import RateLimitRepo
 from app.dynamodb.models import Niche, CollectionRun
 from app.utils.ids import generate_uuid, now_iso8601
 
@@ -54,6 +58,26 @@ def _get_user_id(event: dict) -> str | None:
              .get("lambda", {})
              .get("user_id")
     )
+
+
+def _get_role(event: dict) -> str:
+    """Return the caller's role from the authorizer context (default: 'user')."""
+    return (
+        event.get("requestContext", {})
+             .get("authorizer", {})
+             .get("lambda", {})
+             .get("role", "user")
+    ) or "user"
+
+
+def _get_user_email(event: dict) -> str:
+    """Return the caller's email from the authorizer context."""
+    return (
+        event.get("requestContext", {})
+             .get("authorizer", {})
+             .get("lambda", {})
+             .get("user_email", "")
+    ) or ""
 
 
 def _path_params(event: dict) -> dict:
@@ -209,9 +233,10 @@ def _trigger_collection(event: dict) -> dict:
     Create a CollectionRun (status=pending) and async-invoke collect_worker.
     Returns 202 immediately — no blocking API Gateway timeout.
     """
-    user_id = _get_user_id(event)
-    slug = _path_params(event).get("slug", "")
-    data = _body(event)
+    user_id    = _get_user_id(event)
+    user_email = _get_user_email(event)
+    slug       = _path_params(event).get("slug", "")
+    data       = _body(event)
 
     niche = NicheRepo.get_by_slug(user_id, slug)
     if not niche:
@@ -225,7 +250,7 @@ def _trigger_collection(event: dict) -> dict:
     if not keyword:
         return _response(400, {"success": False, "error": "No keyword specified and niche has no keywords"})
 
-    # Create run record
+    # Create run record — store who triggered it and the niche name
     run_id = generate_uuid()
     run = CollectionRun(
         id=run_id,
@@ -238,9 +263,12 @@ def _trigger_collection(event: dict) -> dict:
         error_message=None,
         started_at=now_iso8601(),
         completed_at=None,
+        user_id=user_id or "",
+        user_email=user_email,
+        niche_name=niche.name,
     )
     CollectionRepo.create(run)
-    logger.info(f"Created collection run {run_id} for niche {niche.id}")
+    logger.info(f"Created collection run {run_id} for niche {niche.id} by {user_email or user_id}")
 
     # Async invoke collect_worker
     worker_arn = os.environ.get("COLLECT_WORKER_ARN")
@@ -249,13 +277,14 @@ def _trigger_collection(event: dict) -> dict:
         return _response(500, {"success": False, "error": "Worker Lambda not configured"})
 
     payload = {
-        "niche_id": niche.id,
-        "run_id": run_id,
+        "niche_id":   niche.id,
+        "run_id":     run_id,
         "started_at": run.started_at,
-        "keyword": keyword,
-        "limit": data.get("limit", 50),
-        "countries": niche.countries or ["US"],
-        "platforms": niche.platforms or ["instagram"],
+        "keyword":    keyword,
+        "limit":      data.get("limit", 50),
+        "countries":  niche.countries or ["US"],
+        "platforms":  niche.platforms or ["instagram"],
+        "user_email": user_email,
     }
 
     try:
@@ -309,6 +338,7 @@ def _list_collection_runs(event: dict) -> dict:
                 "error_message": r.error_message,
                 "started_at": r.started_at,
                 "completed_at": r.completed_at,
+                "api_requests_made": r.api_requests_made,
             }
             for r in runs
         ],
@@ -341,12 +371,14 @@ def _get_collection_run(event: dict) -> dict:
         "error_message": run.error_message,
         "started_at": run.started_at,
         "completed_at": run.completed_at,
+        "api_requests_made": run.api_requests_made,
     }})
 
 
 def _get_collection_health(event: dict) -> dict:
     """
     Return per-user collection health stats across all niches.
+    Accessible to all authenticated users (shows their own data).
 
     For each niche owned by the caller, reports:
       - runs in the last 24 h and their success rate
@@ -430,6 +462,119 @@ def _get_collection_health(event: dict) -> dict:
     })
 
 
+def _get_global_history(event: dict) -> dict:
+    """
+    Admin-only: return all collection runs across all users and niches.
+    Supports time-range filtering and pagination via cursor.
+
+    Query params:
+        hours  — look-back window in hours (default 24, max 168=7d)
+        limit  — max results per page (default 50, max 200)
+        cursor — opaque pagination token (base64 of LastEvaluatedKey JSON)
+    """
+    import base64
+
+    if _get_role(event) != "admin":
+        return _response(403, {"success": False, "error": "Admin access required"})
+
+    from datetime import datetime, timezone, timedelta
+
+    params = _query_params(event)
+    hours  = min(int(params.get("hours", 24)), 168)
+    limit  = min(int(params.get("limit", 50)), 200)
+    cursor = params.get("cursor")
+
+    cutoff = (
+        datetime.now(tz=timezone.utc) - timedelta(hours=hours)
+    ).strftime("%Y-%m-%dT%H:%M:%S")
+
+    # Decode pagination cursor
+    exclusive_start_key = None
+    if cursor:
+        try:
+            exclusive_start_key = json.loads(
+                base64.b64decode(cursor.encode()).decode()
+            )
+        except Exception:
+            exclusive_start_key = None
+
+    runs, last_key = CollectionRepo.list_all_runs(
+        cutoff_iso=cutoff,
+        limit=limit,
+        exclusive_start_key=exclusive_start_key,
+    )
+
+    # Encode next-page cursor
+    next_cursor = None
+    if last_key:
+        next_cursor = base64.b64encode(
+            json.dumps(last_key, default=str).encode()
+        ).decode()
+
+    return _response(200, {
+        "success": True,
+        "data": [
+            {
+                "run_id":            r.id,
+                "niche_id":          r.niche_id,
+                "niche_name":        r.niche_name,
+                "user_email":        r.user_email,
+                "status":            r.status,
+                "keyword":           r.keywords_used[0] if r.keywords_used else None,
+                "limit_requested":   r.limit_requested,
+                "countries":         r.countries,
+                "ads_found":         r.ads_found,
+                "ads_new":           r.ads_new,
+                "ads_updated":       r.ads_updated,
+                "total_ads_after":   r.total_ads_after,
+                "api_requests_made": r.api_requests_made,
+                "error_message":     r.error_message,
+                "started_at":        r.started_at,
+                "completed_at":      r.completed_at,
+            }
+            for r in runs
+        ],
+        "count":       len(runs),
+        "next_cursor": next_cursor,
+        "hours":       hours,
+    })
+
+
+def _get_rate_limit_history(event: dict) -> dict:
+    """
+    Admin-only: return hourly Meta API request counts for the last N hours.
+
+    Query params:
+        hours — look-back window (default 48, max 168)
+    """
+    if _get_role(event) != "admin":
+        return _response(403, {"success": False, "error": "Admin access required"})
+
+    from datetime import datetime, timezone
+
+    params = _query_params(event)
+    hours  = min(int(params.get("hours", 48)), 168)
+
+    buckets = RateLimitRepo.list_recent(hours=hours)
+
+    # Current-hour bucket for the alert banner
+    current_hour = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H")
+    current_total = 0
+    for b in buckets:
+        if b["hour"] == current_hour:
+            current_total = b["total_requests"]
+            break
+
+    return _response(200, {
+        "success": True,
+        "data": buckets,
+        "current_hour": current_hour,
+        "current_total": current_total,
+        "alert_threshold": 160,
+        "hard_limit": 200,
+    })
+
+
 # ---------------------------------------------------------------------------
 # Lambda entry point
 # ---------------------------------------------------------------------------
@@ -442,9 +587,11 @@ _ROUTES: dict[tuple[str, str], callable] = {
     ("DELETE", "/api/niches/{slug}"):                                       _delete_niche,
     ("GET",    "/api/niches/{slug}/stats"):                                 _get_niche_stats,
     ("POST",   "/api/niches/{slug}/collect"):                               _trigger_collection,
-    ("GET",    "/api/niches/{slug}/collection-runs"):                        _list_collection_runs,
+    ("GET",    "/api/niches/{slug}/collection-runs"):                       _list_collection_runs,
     ("GET",    "/api/niches/{slug}/collection-runs/{run_id}"):              _get_collection_run,
     ("GET",    "/api/admin/collection/health"):                             _get_collection_health,
+    ("GET",    "/api/admin/global-history"):                                _get_global_history,
+    ("GET",    "/api/admin/rate-limit/history"):                            _get_rate_limit_history,
 }
 
 

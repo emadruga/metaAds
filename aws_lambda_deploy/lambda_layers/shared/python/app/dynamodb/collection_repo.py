@@ -66,6 +66,49 @@ class CollectionRepo:
         runs = CollectionRepo.list_for_niche(niche_id, limit=1)
         return runs[0] if runs else None
 
+    @staticmethod
+    def list_all_runs(
+        cutoff_iso: str = "",
+        limit: int = 100,
+        exclusive_start_key: Optional[dict] = None,
+    ) -> tuple:
+        """
+        Scan the entire table for COLLECTION_RUN items, optionally filtered
+        to runs started on or after *cutoff_iso* (ISO8601 string).
+
+        Returns (runs: List[CollectionRun], last_evaluated_key: dict | None).
+        Pass the returned last_evaluated_key back as exclusive_start_key to
+        paginate through results.
+        """
+        table = get_table()
+
+        filter_parts = ["entity_type = :et"]
+        expr_values: dict = {":et": "COLLECTION_RUN"}
+
+        if cutoff_iso:
+            filter_parts.append("started_at >= :cutoff")
+            expr_values[":cutoff"] = cutoff_iso
+
+        scan_kwargs: dict = {
+            "FilterExpression": " AND ".join(filter_parts),
+            "ExpressionAttributeValues": expr_values,
+        }
+        if exclusive_start_key:
+            scan_kwargs["ExclusiveStartKey"] = exclusive_start_key
+
+        resp = table.scan(**scan_kwargs)
+        items = resp.get("Items", [])
+
+        # Sort newest-first by started_at
+        items.sort(key=lambda i: i.get("started_at", ""), reverse=True)
+
+        # Apply limit after sorting (scan returns all matching pages at once)
+        items = items[:limit]
+
+        runs = [CollectionRun.from_item(i) for i in items]
+        last_key = resp.get("LastEvaluatedKey")
+        return runs, last_key
+
     # ------------------------------------------------------------------
     # Write
     # ------------------------------------------------------------------
@@ -124,6 +167,7 @@ class CollectionRepo:
         ads_new: int,
         ads_updated: int,
         total_ads_after: int = 0,
+        api_requests_made: int = 0,
     ) -> None:
         CollectionRepo._update_status(
             niche_id,
@@ -136,6 +180,7 @@ class CollectionRepo:
                 "ads_updated": ads_updated,
                 "total_ads_after": total_ads_after,
                 "completed_at": now_iso8601(),
+                "api_requests_made": api_requests_made,
             },
         )
 
