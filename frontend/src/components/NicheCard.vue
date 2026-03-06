@@ -4,32 +4,30 @@
     <div class="niche-info">
       <h3 class="niche-name">{{ niche.name }}</h3>
       <p class="niche-description" v-if="niche.description">{{ niche.description }}</p>
-      <div class="niche-footer">
-        <div class="niche-stats">
-          <span class="stat">
-            <span class="stat-value">{{ niche.stats?.total_ads || 0 }}</span>
-            <span class="stat-label">ads</span>
+      <div class="niche-stats">
+        <span class="stat">
+          <span class="stat-value">{{ niche.stats?.total_ads || 0 }}</span>
+          <span class="stat-label">ads</span>
+        </span>
+        <span class="stat">
+          <span class="stat-value">{{ niche.stats?.saved_ads || 0 }}</span>
+          <span class="stat-label">saved</span>
+        </span>
+      </div>
+      <div class="auto-collect-toggle" @click.stop>
+        <span class="toggle-label">Auto-Collect</span>
+        <label class="toggle-switch" :class="{ updating: isUpdating }">
+          <input
+            type="checkbox"
+            :checked="niche.auto_collect_enabled || false"
+            :disabled="isUpdating"
+            @change="handleToggle"
+          />
+          <span class="slider">
+            <span class="slider-off">Off</span>
+            <span class="slider-on">On</span>
           </span>
-          <span class="stat">
-            <span class="stat-value">{{ niche.stats?.saved_ads || 0 }}</span>
-            <span class="stat-label">saved</span>
-          </span>
-        </div>
-        <div class="auto-collect-toggle" @click.stop>
-          <span class="toggle-label">Auto-Collect</span>
-          <label class="toggle-switch" :class="{ updating: isUpdating }">
-            <input
-              type="checkbox"
-              :checked="niche.auto_collect_enabled || false"
-              :disabled="isUpdating"
-              @change="handleToggle"
-            />
-            <span class="slider">
-              <span class="slider-off">Off</span>
-              <span class="slider-on">On</span>
-            </span>
-          </label>
-        </div>
+        </label>
       </div>
     </div>
     <div class="niche-arrow">→</div>
@@ -66,8 +64,7 @@ async function handleToggle(event) {
   try {
     await nichesStore.toggleAutoCollect(props.niche.slug, enabled)
   } catch {
-    // Store already reverted the optimistic update; checkbox reflects reverted state
-    // via niche.auto_collect_enabled binding
+    // Store already reverted the optimistic update
     event.target.checked = !enabled
   } finally {
     isUpdating.value = false
@@ -111,33 +108,30 @@ async function handleToggle(event) {
   .niche-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
   }
 
   .niche-name {
     font-size: var(--font-size-lg);
     font-weight: 600;
-    margin: 0 0 var(--spacing-1) 0;
+    margin: 0;
   }
 
   .niche-description {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
-    margin: 0 0 var(--spacing-2) 0;
+    margin: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .niche-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-3);
-  }
-
   .niche-stats {
     display: flex;
     gap: var(--spacing-4);
+    margin-top: var(--spacing-1);
   }
 
   .stat {
@@ -162,7 +156,9 @@ async function handleToggle(event) {
     display: flex;
     align-items: center;
     gap: var(--spacing-2);
-    flex-shrink: 0;
+    margin-top: var(--spacing-1);
+    padding-top: var(--spacing-2);
+    border-top: 1px solid var(--color-border);
   }
 
   .toggle-label {
@@ -244,13 +240,8 @@ async function handleToggle(event) {
       transform: translateX(46px);
     }
 
-    .slider-off {
-      opacity: 0;
-    }
-
-    .slider-on {
-      opacity: 1;
-    }
+    .slider-off { opacity: 0; }
+    .slider-on  { opacity: 1; }
   }
 
   .niche-arrow {
