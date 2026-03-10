@@ -89,6 +89,28 @@ fi
 
 echo "✓ All critical packages verified"
 
+# ----------------------------------------------------------------------------
+# Install Chromium system dependencies (required by Playwright headless)
+# ----------------------------------------------------------------------------
+echo "[Step 2.5/10] Installing Chromium system dependencies..."
+dnf install -y --skip-broken \
+    nss \
+    atk \
+    at-spi2-atk \
+    cups-libs \
+    libdrm \
+    libxkbcommon \
+    libXcomposite \
+    libXdamage \
+    libXfixes \
+    libXrandr \
+    mesa-libgbm \
+    pango \
+    alsa-lib \
+    gtk3 \
+    xorg-x11-server-Xvfb || echo "Warning: Some Chromium deps could not be installed via dnf"
+echo "✓ Chromium system deps step complete"
+
 # Set Python 3.12 as default
 alternatives --set python3 /usr/bin/python3.12 || {
     echo "Warning: Could not set Python 3.12 as default"
@@ -172,6 +194,11 @@ su - ec2-user -c "
         echo 'ERROR: Core Python packages not available'
         exit 1
     }
+
+    # Install Andromeda-specific packages
+    echo 'Installing Andromeda packages: playwright-stealth, boto3...'
+    pip install playwright-stealth boto3 --no-cache-dir || echo 'Warning: Some Andromeda packages failed to install'
+    echo '✓ Andromeda packages step complete'
 "
 
 # ============================================================================
@@ -181,8 +208,13 @@ echo "[Step 7/10] Installing Playwright browsers..."
 su - ec2-user -c "
     cd $APP_DIR
     source venv/bin/activate
-    playwright install chromium || echo 'Playwright install skipped (not critical)'
+    playwright install chromium || echo 'Playwright browser install skipped (not critical)'
 "
+
+# playwright install-deps must run as root — it calls dnf under the hood
+echo "[Step 7.5/10] Installing Playwright OS-level dependencies (root)..."
+$APP_DIR/venv/bin/playwright install-deps chromium || echo "Warning: playwright install-deps failed, browser may still work"
+echo "✓ Playwright deps step complete"
 
 # ============================================================================
 # Create Directory Structure
@@ -208,6 +240,24 @@ su - ec2-user -c "
         echo 'WARNING: final_feasibility.py not found in repository'
     fi
 "
+
+# ============================================================================
+# Run Andromeda Feasibility Test (Steps 1-8)
+# ============================================================================
+echo "[Step 8.7/10] Running Andromeda feasibility test (steps 1-8)..."
+su - ec2-user -c "
+    cd $APP_DIR
+    source venv/bin/activate
+    TEST_SCRIPT='aws_feasibility/andromeda_single_ad_test.py'
+    if [ -f \$TEST_SCRIPT ]; then
+        echo 'Starting Andromeda test — this may take 1-2 minutes...'
+        python \$TEST_SCRIPT 2>&1 | tee /home/ec2-user/andromeda_test.log
+        echo '✓ Andromeda test complete. Results in /home/ec2-user/andromeda_test.log'
+    else
+        echo 'WARNING: andromeda_single_ad_test.py not found.'
+        echo 'Ensure aws_feasibility/andromeda_single_ad_test.py is committed to GitHub.'
+    fi
+" || echo "Warning: Andromeda test step had errors — check /home/ec2-user/andromeda_test.log"
 
 # ============================================================================
 # Set File Permissions
@@ -256,11 +306,16 @@ su - ec2-user -c "
 4. Verify .env file:
    ls -la .env
 
-5. Run API test:
-   python test_api.py
+5. View Andromeda test results (ran automatically):
+   cat /home/ec2-user/andromeda_test.log
+   cat /home/ec2-user/andromeda_test_results.json
 
-6. Run comprehensive feasibility test:
-   python final_feasibility.py
+6. Re-run Andromeda test manually:
+   cd ~/metaAds && source venv/bin/activate
+   python aws_feasibility/andromeda_single_ad_test.py --ad-id 2162596270894996
+
+7. Run original API connectivity test:
+   python test_api.py
 
 7. Run example usage (alternative):
    python example_usage.py

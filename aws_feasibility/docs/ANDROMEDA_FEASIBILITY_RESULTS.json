@@ -1,0 +1,57 @@
+{
+  "ad_id": "2162596270894996",
+  "started_at": "2026-03-10T01:03:11.224687Z",
+  "completed_at": "2026-03-10T01:03:45.701264Z",
+  "stealth_enabled": true,
+  "dry_run": false,
+  "steps": {
+    "1_get_token": {
+      "status": "PASS",
+      "details": "token length=205, starts with EAFuK2eb..."
+    },
+    "2_launch_playwright": {
+      "status": "PASS",
+      "details": "headless Chromium ready, stealth=True"
+    },
+    "3_navigate": {
+      "status": "PASS",
+      "details": "domcontentloaded in 1.5s"
+    },
+    "4_networkidle": {
+      "status": "PASS",
+      "details": "idle in 1.1s"
+    },
+    "5_extract_urls": {
+      "status": "PASS",
+      "details": "video=yes, poster=yes, img_fallback=no"
+    },
+    "6_url_validity": {
+      "status": "PASS",
+      "details": "primary URL valid \u2014 expires 2026-03-14 11:34 UTC (in 106.5h)"
+    },
+    "7_download_video": {
+      "status": "PASS",
+      "details": "1.6 MB in 0.2s \u2192 /tmp/andromeda_test/ad_2162596270894996.mp4"
+    },
+    "8_download_thumbnail": {
+      "status": "PASS",
+      "details": "275 KB in 0.0s \u2192 /tmp/andromeda_test/thumb_2162596270894996.jpg"
+    }
+  },
+  "summary": {
+    "passed": 8,
+    "failed": 0
+  },
+  "extracted": {
+    "video_url": "https://video-iad3-1.xx.fbcdn.net/o1/v/t2/f2/m412/AQN0W1TaDC-kVOaoQFKVhgv4p5VfkD2uobE3HgTf7jPTLNaVIDz2YzavIoQsQYzHGYpdY3ssmpTLkLhor7Hihoro71k0wr7NK4PPcUOzDQ.mp4?_nc_cat=101&_nc_sid=8bf8fe&_nc_ht=video-iad3-1.xx.fbcdn.net&_nc_ohc=1nb5b4kN9hsQ7kNvwHCG-lD&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5WSV9VU0VDQVNFX1BST0RVQ1RfVFlQRS4uQzMuMzYwLnN2ZV9zZCIsInhwdl9hc3NldF9pZCI6Njg5NjU2Mjk3NTE0NDAxLCJhc3NldF9hZ2VfZGF5cyI6MTM1LCJ2aV91c2VjYXNlX2lkIjoxMDc5OSwiZHVyYXRpb25fcyI6NTcsInVybGdlbl9zb3VyY2UiOiJ3d3cifQ%3D%3D&ccb=17-1&_nc_gid=CkXV7vpZCiLh68CqnzjXOg&_nc_ss=8&_nc_zt=28&oh=00_AfxDdcfLR3N_ryU1s__A72WDo1FB6Jl6Qf02qtXdVL6SLQ&oe=69B547BD",
+    "thumbnail_url": "https://scontent-iad3-1.xx.fbcdn.net/v/t39.35426-6/569066098_1182226610418541_1801287585517399472_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=c53f8f&_nc_ohc=QjmmdbYFcnoQ7kNvwHQe8ry&_nc_oc=AdnB20p3Z4CahKh-yU4hy8O0BIdXa862Y3QxNh8-lTBCQ-AwyUf5rGYX3-mzSFBea6I&_nc_zt=14&_nc_ht=scontent-iad3-1.xx&_nc_gid=CkXV7vpZCiLh68CqnzjXOg&_nc_ss=8&oh=00_Afxtu9_qJKSErXAMQYEkge2gLeOvu3DKw4NCjKuwjlYG7Q&oe=69B54628",
+    "video_url_expiry": "expires 2026-03-14 11:34 UTC (in 106.5h)",
+    "thumbnail_url_expiry": "expires 2026-03-14 11:27 UTC (in 106.4h)"
+  },
+  "downloads": {
+    "video_path": "/tmp/andromeda_test/ad_2162596270894996.mp4",
+    "video_size_mb": 1.64,
+    "thumbnail_path": "/tmp/andromeda_test/thumb_2162596270894996.jpg",
+    "thumbnail_size_kb": 275.4
+  }
+}

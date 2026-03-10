@@ -138,3 +138,13 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
+
+# ============================================================================
+# AWS Profile
+# ============================================================================
+
+variable "aws_profile" {
+  description = "AWS CLI profile to use for authentication"
+  type        = string
+  default     = "metads"
+}
