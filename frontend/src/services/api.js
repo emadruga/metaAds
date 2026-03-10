@@ -110,6 +110,7 @@ export const adApi = {
   get: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}`),
   related: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}/related`),
   variantAnalysis: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}/variants/analysis`),
+  creativeAssets: (slug, adId) => api.get(`/niches/${slug}/ads/${adId}/creative-assets`),
   clearAll: (slug, params = {}) => api.delete(`/niches/${slug}/ads/clear`, { params })
 }
 

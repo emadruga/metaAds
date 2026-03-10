@@ -138,6 +138,12 @@
         >
           🎯 View {{ relatedCount }} Other Campaign{{ relatedCount !== 1 ? 's' : '' }}
         </button>
+        <button
+          class="btn btn-secondary"
+          @click="showCreativeQualityModal = true"
+        >
+          🎨 Creative Quality Assessment
+        </button>
         <a
           v-if="ad.media?.snapshot_url || ad.snapshot_url"
           :href="ad.media?.snapshot_url || ad.snapshot_url"
@@ -147,6 +153,15 @@
           🔍 View Full Ad on Meta
         </a>
       </div>
+
+      <!-- Creative Quality Modal -->
+      <CreativeQualityModal
+        v-if="showCreativeQualityModal"
+        :niche-slug="nicheSlug"
+        :ad-id="ad.meta_ad_id"
+        :ad-page-name="ad.page_name"
+        @close="showCreativeQualityModal = false"
+      />
 
       <!-- Note about images (only show if button is visible) -->
       <div v-if="ad.media?.snapshot_url || ad.snapshot_url" class="meta-note">
@@ -167,6 +182,7 @@
   import { ref, computed, watch } from 'vue'
   import VariantAnalysis from './VariantAnalysis.vue'
   import CreativeCarousel from './CreativeCarousel.vue'
+  import CreativeQualityModal from './CreativeQualityModal.vue'
 
   const props = defineProps({
     ad: {
@@ -192,6 +208,7 @@
   const notes = ref('')
   const tags = ref([])
   const newTag = ref('')
+  const showCreativeQualityModal = ref(false)
 
   const isSaved = computed(() => {
     return props.ad?.saved?.is_saved || props.ad?.is_saved || false
@@ -224,6 +241,7 @@
       if (newId && props.ad) {
         notes.value = props.ad.saved?.notes || ''
         tags.value = props.ad.saved?.tags || []
+        showCreativeQualityModal.value = false
       }
     },
     { immediate: true }
