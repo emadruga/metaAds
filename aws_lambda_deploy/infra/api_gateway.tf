@@ -21,6 +21,7 @@
 #   GET    /api/niches/{slug}/ads/{id}    -> ads Lambda
 #   GET    /api/niches/{slug}/ads/{id}/related -> ads Lambda
 #   GET    /api/niches/{slug}/ads/{id}/variants -> ads Lambda
+#   GET    /api/niches/{slug}/ads/{id}/creative-assets -> ads Lambda
 #   POST   /api/niches/{slug}/ads/clear   -> ads Lambda
 #   PATCH  /api/niches/{slug}/ads/{id}/save -> saved Lambda
 #   GET    /api/niches/{slug}/saved       -> saved Lambda
@@ -367,6 +368,14 @@ resource "aws_apigatewayv2_route" "ads_related" {
 resource "aws_apigatewayv2_route" "ads_variants" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /api/niches/{slug}/ads/{ad_id}/variants/analysis"
+  target             = "integrations/${aws_apigatewayv2_integration.ads.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "ads_creative_assets" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /api/niches/{slug}/ads/{ad_id}/creative-assets"
   target             = "integrations/${aws_apigatewayv2_integration.ads.id}"
   authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.jwt.id

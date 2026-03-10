@@ -166,7 +166,9 @@ resource "aws_lambda_function" "ads" {
   layers = [aws_lambda_layer_version.shared.arn]
 
   environment {
-    variables = local.common_env
+    variables = merge(local.common_env, {
+      META_API_SECRETS_NAME = aws_secretsmanager_secret.meta_api.name
+    })
   }
 
   depends_on = [

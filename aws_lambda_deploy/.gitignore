@@ -5,3 +5,5 @@ lambda_stubs/*
 
 # OS
 .DS_Store
+*.pdf
+

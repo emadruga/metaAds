@@ -79,7 +79,8 @@ resource "aws_iam_role_policy" "lambda_api_secrets" {
           "secretsmanager:GetSecretValue"
         ]
         Resource = [
-          aws_secretsmanager_secret.clerk.arn
+          aws_secretsmanager_secret.clerk.arn,
+          aws_secretsmanager_secret.meta_api.arn
         ]
       }
     ]

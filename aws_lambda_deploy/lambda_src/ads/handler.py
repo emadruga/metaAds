@@ -4,10 +4,11 @@ Ads Lambda handler — search, detail, variants/analysis, related, pages, clear.
 Routes (HTTP API v2 payload format 2.0):
     GET    /api/niches/{slug}/ads/search              search_ads
     GET    /api/niches/{slug}/ads/{ad_id}             get_ad
-    GET    /api/niches/{slug}/ads/{ad_id}/related     get_related_ads
-    GET    /api/niches/{slug}/ads/{ad_id}/variants/analysis  analyze_ad_variants
-    GET    /api/niches/{slug}/pages                   list_pages
-    DELETE /api/niches/{slug}/ads/clear               clear_all_ads
+    GET    /api/niches/{slug}/ads/{ad_id}/related              get_related_ads
+    GET    /api/niches/{slug}/ads/{ad_id}/variants/analysis    analyze_ad_variants
+    GET    /api/niches/{slug}/ads/{ad_id}/creative-assets      get_creative_assets
+    GET    /api/niches/{slug}/pages                            list_pages
+    DELETE /api/niches/{slug}/ads/clear                        clear_all_ads
 
 Environment variables:
     DYNAMODB_TABLE  — DynamoDB table name
@@ -344,6 +345,139 @@ def _list_pages(event: dict) -> dict:
     })
 
 
+def _get_creative_assets(event: dict) -> dict:
+    """
+    Check availability of creative assets (thumbnail, video) for an ad.
+
+    Uses Meta's internal Ad Library GraphQL endpoint (doc_id 32740921038887979)
+    to obtain fresh, signed CDN URLs for thumbnail and video without needing
+    an access token. Then probes each URL with a HEAD request to confirm
+    it is currently accessible (not expired).
+
+    Returns:
+        {
+          "thumbnail": { "url": str|null, "accessible": bool },
+          "video":     { "url": str|null, "accessible": bool },
+          "creative_type": str,
+          "display_format": str|null
+        }
+    """
+    import json as _json
+    import requests as _requests
+
+    user_id = _get_user_id(event)
+    slug = _path_params(event).get("slug", "")
+    ad_id = _path_params(event).get("ad_id", "")
+
+    niche = _get_niche(user_id, slug)
+    if not niche:
+        return _response(404, {"success": False, "error": "Niche not found"})
+
+    ad = AdRepo.get(niche.id, ad_id)
+    if not ad:
+        return _response(404, {"success": False, "error": "Ad not found"})
+
+    # -------------------------------------------------------------------------
+    # Query Meta Ad Library GraphQL for fresh CDN URLs
+    # doc_id 32740921038887979 is the AdLibraryAdDetailQuery used by the
+    # Ad Library React app — returns snapshot with videos[].video_sd_url,
+    # videos[].video_preview_image_url, images[].original_image_url
+    # No access_token required.
+    # -------------------------------------------------------------------------
+    GRAPHQL_URL = "https://www.facebook.com/api/graphql/"
+    HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Origin": "https://www.facebook.com",
+    }
+
+    thumbnail_url = None
+    video_url = None
+    display_format = None
+    fetch_error = None
+
+    try:
+        resp = _requests.post(
+            GRAPHQL_URL,
+            data={
+                "doc_id": "32740921038887979",
+                "variables": _json.dumps({"adID": str(ad.meta_ad_id)}),
+            },
+            headers=HEADERS,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        snapshot = (
+            data.get("data", {})
+                .get("ad_library_main", {})
+                .get("demo_ad_archive_result", {})
+                .get("demo_ad_archive", {})
+                .get("snapshot", {})
+        )
+
+        display_format = snapshot.get("display_format")
+
+        # Video ads: videos[] array
+        videos = snapshot.get("videos", [])
+        if videos:
+            v = videos[0]
+            video_url = v.get("video_hd_url") or v.get("video_sd_url") or None
+            thumbnail_url = v.get("video_preview_image_url") or None
+
+        # Image/carousel ads: images[] array
+        if not thumbnail_url:
+            images = snapshot.get("images", [])
+            if images:
+                thumbnail_url = images[0].get("original_image_url") or images[0].get("resized_image_url") or None
+
+        # Carousel: cards[]
+        if not thumbnail_url and not video_url:
+            cards = snapshot.get("cards", [])
+            if cards:
+                c = cards[0]
+                video_url = c.get("video_hd_url") or c.get("video_sd_url") or None
+                thumbnail_url = c.get("original_image_url") or c.get("resized_image_url") or None
+
+        logger.info(f"[creative-assets] {ad.meta_ad_id}: format={display_format}, "
+                    f"thumbnail={'yes' if thumbnail_url else 'no'}, "
+                    f"video={'yes' if video_url else 'no'}")
+
+    except _requests.exceptions.HTTPError as exc:
+        fetch_error = f"GraphQL HTTP {exc.response.status_code}: {exc.response.text[:200]}" if exc.response else "HTTP error"
+        logger.warning(f"[creative-assets] GraphQL HTTP error for {ad.meta_ad_id}: {fetch_error}")
+    except Exception as exc:
+        fetch_error = f"{type(exc).__name__}: {str(exc)[:200]}"
+        logger.warning(f"[creative-assets] GraphQL error for {ad.meta_ad_id}: {type(exc).__name__}")
+
+    # -------------------------------------------------------------------------
+    # Probe each URL with HEAD to confirm it is accessible right now
+    # -------------------------------------------------------------------------
+    def _probe(url: str) -> bool:
+        if not url:
+            return False
+        try:
+            r = _requests.head(url, headers=HEADERS, timeout=10, allow_redirects=True)
+            return r.status_code < 400
+        except Exception:
+            return False
+
+    thumbnail_accessible = _probe(thumbnail_url)
+    video_accessible = _probe(video_url)
+
+    result = {
+        "thumbnail": {"url": thumbnail_url, "accessible": thumbnail_accessible},
+        "video": {"url": video_url, "accessible": video_accessible},
+        "creative_type": ad.creative_type,
+        "display_format": display_format,
+    }
+    if fetch_error:
+        result["fetch_error"] = fetch_error
+
+    return _response(200, {"success": True, "data": result})
+
+
 def _clear_all_ads(event: dict) -> dict:
     """Delete ads for a niche. Pass include_saved=true to also delete saved ads."""
     user_id = _get_user_id(event)
@@ -368,12 +502,13 @@ def _clear_all_ads(event: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 _ROUTES: dict[tuple[str, str], callable] = {
-    ("GET",    "/api/niches/{slug}/ads/search"):                     _search_ads,
-    ("GET",    "/api/niches/{slug}/ads/{ad_id}"):                    _get_ad,
-    ("GET",    "/api/niches/{slug}/ads/{ad_id}/related"):            _get_related_ads,
-    ("GET",    "/api/niches/{slug}/ads/{ad_id}/variants/analysis"):  _analyze_ad_variants,
-    ("GET",    "/api/niches/{slug}/pages"):                          _list_pages,
-    ("DELETE", "/api/niches/{slug}/ads/clear"):                      _clear_all_ads,
+    ("GET",    "/api/niches/{slug}/ads/search"):                          _search_ads,
+    ("GET",    "/api/niches/{slug}/ads/{ad_id}"):                         _get_ad,
+    ("GET",    "/api/niches/{slug}/ads/{ad_id}/related"):                 _get_related_ads,
+    ("GET",    "/api/niches/{slug}/ads/{ad_id}/variants/analysis"):       _analyze_ad_variants,
+    ("GET",    "/api/niches/{slug}/ads/{ad_id}/creative-assets"):         _get_creative_assets,
+    ("GET",    "/api/niches/{slug}/pages"):                               _list_pages,
+    ("DELETE", "/api/niches/{slug}/ads/clear"):                           _clear_all_ads,
 }
 
 
