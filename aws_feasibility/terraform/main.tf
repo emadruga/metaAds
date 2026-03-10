@@ -21,7 +21,8 @@ terraform {
 # ============================================================================
 
 provider "aws" {
-  region = var.aws_region
+  region  = var.aws_region
+  profile = var.aws_profile
 
   default_tags {
     tags = {
@@ -61,6 +62,9 @@ data "aws_ami" "amazon_linux_2023" {
 
 # Get current AWS region
 data "aws_region" "current" {}
+
+# Get current AWS account ID (used in IAM policy ARNs)
+data "aws_caller_identity" "current" {}
 
 # Get default VPC (simplicity for feasibility test)
 data "aws_vpc" "default" {
@@ -108,7 +112,53 @@ resource "aws_security_group" "metaads_sg" {
 }
 
 # ============================================================================
-# EC2 Instance (WITHOUT IAM instance profile)
+# IAM Role for EC2 (Andromeda test — Secrets Manager read access)
+# ============================================================================
+
+resource "aws_iam_role" "andromeda_ec2_role" {
+  name = "metaads-andromeda-feasibility-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+
+  tags = {
+    Name = "metaads-andromeda-feasibility-role"
+  }
+}
+
+resource "aws_iam_role_policy" "andromeda_ec2_policy" {
+  name = "metaads-andromeda-feasibility-policy"
+  role = aws_iam_role.andromeda_ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:metaads/dev/meta-api*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "andromeda_ec2_profile" {
+  name = "metaads-andromeda-feasibility-profile"
+  role = aws_iam_role.andromeda_ec2_role.name
+
+  tags = {
+    Name = "metaads-andromeda-feasibility-profile"
+  }
+}
+
+# ============================================================================
+# EC2 Instance
 # ============================================================================
 
 resource "aws_instance" "metaads" {
@@ -121,7 +171,7 @@ resource "aws_instance" "metaads" {
   vpc_security_group_ids      = [aws_security_group.metaads_sg.id]
   associate_public_ip_address = true
 
-  # NO IAM instance profile (removed due to restricted permissions)
+  iam_instance_profile = aws_iam_instance_profile.andromeda_ec2_profile.name
 
   # Storage
   root_block_device {
