@@ -657,6 +657,7 @@ class Competitor:
     page_name: str
     notes: str = ""
     added_at: str = ""
+    countries: str = "BR"
     # Page profile metadata (fetched from Graph API at add-time)
     fan_count: Optional[int] = None
     category: str = ""
@@ -680,6 +681,7 @@ class Competitor:
             "page_name": self.page_name,
             "notes": self.notes,
             "added_at": self.added_at,
+            "countries": self.countries,
             "category": self.category,
             "about": self.about,
         }
@@ -696,6 +698,7 @@ class Competitor:
             page_name=item["page_name"],
             notes=item.get("notes", ""),
             added_at=item.get("added_at", ""),
+            countries=item.get("countries", "BR"),
             fan_count=int(fan_count_raw) if fan_count_raw is not None else None,
             category=item.get("category", ""),
             about=item.get("about", ""),
@@ -708,6 +711,7 @@ class Competitor:
             "page_name": self.page_name,
             "notes": self.notes,
             "added_at": self.added_at,
+            "countries": self.countries,
             "fan_count": self.fan_count,
             "category": self.category,
             "about": self.about,

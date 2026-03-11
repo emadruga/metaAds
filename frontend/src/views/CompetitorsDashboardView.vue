@@ -49,6 +49,18 @@
               @keyup.enter="handleAdd"
               :disabled="adding"
             />
+            <select v-model="newCountries" class="form-input form-input-country" :disabled="adding">
+              <option value="BR">🇧🇷 Brazil</option>
+              <option value="US">🇺🇸 United States</option>
+              <option value="CA">🇨🇦 Canada</option>
+              <option value="FR">🇫🇷 France</option>
+              <option value="DE">🇩🇪 Germany</option>
+              <option value="IT">🇮🇹 Italy</option>
+              <option value="PT">🇵🇹 Portugal</option>
+              <option value="ES">🇪🇸 Spain</option>
+              <option value="JP">🇯🇵 Japan</option>
+              <option value="CN">🇨🇳 China</option>
+            </select>
             <input
               v-model="newPageId"
               class="form-input form-input-sm"
@@ -151,6 +163,7 @@
   const showAddForm = ref(false)
   const newPageName = ref('')
   const newPageId = ref('')
+  const newCountries = ref('BR')
   const adding = ref(false)
   const addError = ref('')
   const searchQuery = ref('')
@@ -177,6 +190,7 @@
       await store.addCompetitor({
         page_name: name,
         page_id: newPageId.value.trim() || undefined,
+        countries: newCountries.value,
       })
       cancelAdd()
     } catch (e) {
@@ -190,6 +204,7 @@
     showAddForm.value = false
     newPageName.value = ''
     newPageId.value = ''
+    newCountries.value = 'BR'
     addError.value = ''
   }
 
@@ -352,6 +367,12 @@
     &.form-input-sm {
       flex: 0 0 180px;
       min-width: 0;
+    }
+
+    &.form-input-country {
+      flex: 0 0 160px;
+      min-width: 0;
+      cursor: pointer;
     }
 
     &:disabled {

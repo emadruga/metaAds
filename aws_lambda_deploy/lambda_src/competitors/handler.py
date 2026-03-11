@@ -137,7 +137,7 @@ def _get_page_profile(page_id: str) -> dict:
     return {}
 
 
-def _search_by_page_name(page_name: str) -> List[dict]:
+def _search_by_page_name(page_name: str, countries: str = "BR") -> List[dict]:
     """
     Search the Ad Library for ads matching page_name.
     Returns raw API ad objects. Used to discover a page's page_id.
@@ -146,7 +146,7 @@ def _search_by_page_name(page_name: str) -> List[dict]:
     params = {
         "access_token": token,
         "search_terms": page_name,
-        "ad_reached_countries": "US,BR",
+        "ad_reached_countries": countries,
         "ad_active_status": "ACTIVE",
         "fields": ",".join(_AD_FIELDS),
         "limit": 25,
@@ -268,6 +268,7 @@ def _add_competitor(event: dict) -> dict:
 
     page_name = (data.get("page_name") or "").strip()
     page_id = (data.get("page_id") or "").strip()
+    countries = (data.get("countries") or "BR").strip() or "BR"
 
     if not page_name:
         return _response(400, {"success": False, "error": "page_name is required"})
@@ -275,7 +276,7 @@ def _add_competitor(event: dict) -> dict:
     # If page_id not provided, search Meta API to resolve it
     if not page_id:
         try:
-            ads = _search_by_page_name(page_name)
+            ads = _search_by_page_name(page_name, countries=countries)
             # Prefer exact case-insensitive match on page_name
             matched = [a for a in ads if a.get("page_name", "").lower() == page_name.lower()]
             if not matched:
@@ -327,6 +328,7 @@ def _add_competitor(event: dict) -> dict:
         page_name=page_name,
         notes=data.get("notes", ""),
         added_at=now_iso8601(),
+        countries=countries,
         fan_count=fan_count,
         category=profile.get("category", ""),
         about=profile.get("about", ""),
@@ -384,7 +386,7 @@ def _get_competitor_ads(event: dict) -> dict:
 
     limit = min(int(params.get("limit", 100)), 200)
     ad_active_status = params.get("status", "ACTIVE").upper()
-    countries_raw = params.get("countries", "US,BR")
+    countries_raw = params.get("countries") or competitor.countries or "BR"
     countries = [c.strip() for c in countries_raw.split(",") if c.strip()]
 
     try:

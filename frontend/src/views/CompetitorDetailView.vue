@@ -321,10 +321,10 @@
   async function loadAds() {
     if (!pageId.value) return
     try {
-      await store.fetchCompetitorAds(pageId.value, {
-        status: statusFilter.value,
-        limit: 200,
-      })
+      const params = { status: statusFilter.value, limit: 200 }
+      const c = competitor.value?.countries
+      if (c) params.countries = c
+      await store.fetchCompetitorAds(pageId.value, params)
     } catch (_) {
       // error already stored in store.adsError
     }
