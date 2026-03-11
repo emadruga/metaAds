@@ -132,3 +132,11 @@ export const collectApi = {
   getGlobalHistory: (params = {}) => api.get('/admin/global-history', { params }),
   getRateLimitHistory: (hours = 48) => api.get(`/admin/rate-limit/history?hours=${hours}`)
 }
+
+export const competitorApi = {
+  list: () => api.get('/competitors'),
+  add: (data) => api.post('/competitors', data),
+  update: (pageId, data) => api.patch(`/competitors/${pageId}`, data),
+  remove: (pageId) => api.delete(`/competitors/${pageId}`),
+  getAds: (pageId, params = {}) => api.get(`/competitors/${pageId}/ads`, { params })
+}

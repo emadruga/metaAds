@@ -5,6 +5,9 @@
         <h1 class="logo">MetAds</h1>
       </div>
       <nav class="header-nav">
+        <router-link to="/competitors" class="nav-link">
+          🏆 Competition
+        </router-link>
         <router-link to="/admin/collection-health" class="nav-link">
           📡 Collection Health
         </router-link>

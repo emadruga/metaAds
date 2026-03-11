@@ -67,6 +67,20 @@ const routes = [
     ]
   },
 
+  // Competitors
+  {
+    path: '/competitors',
+    name: 'CompetitorsDashboard',
+    component: () => import('@/views/CompetitorsDashboardView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/competitors/:pageId',
+    name: 'CompetitorDetail',
+    component: () => import('@/views/CompetitorDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+
   // Admin routes
   {
     path: '/admin/collection-health',
