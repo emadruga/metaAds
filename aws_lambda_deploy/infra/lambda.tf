@@ -328,6 +328,41 @@ resource "aws_lambda_function" "collect_scheduler" {
 }
 
 # -----------------------------------------------------------------------------
+# Competitors Handler Lambda
+# Routes: GET/POST/PATCH/DELETE /api/competitors + /api/competitors/{page_id}/ads
+# -----------------------------------------------------------------------------
+
+resource "aws_lambda_function" "competitors" {
+  function_name = "${local.name_prefix}-competitors"
+  description   = "Competitors CRUD + live Meta Ad Library ad fetching"
+  role          = aws_iam_role.lambda_api.arn
+  runtime       = var.lambda_runtime
+  handler       = "handler.handler"
+  timeout       = 30   # Live Meta API calls can take up to ~20s
+  memory_size   = var.lambda_memory_mb
+
+  filename         = "${local.stubs_path}/competitors.zip"
+  source_code_hash = filebase64sha256("${local.stubs_path}/competitors.zip")
+
+  layers = [aws_lambda_layer_version.shared.arn]
+
+  environment {
+    variables = merge(local.common_env, {
+      META_API_SECRETS_NAME = aws_secretsmanager_secret.meta_api.name
+    })
+  }
+
+  depends_on = [
+    aws_cloudwatch_log_group.lambda_competitors,
+    aws_iam_role_policy_attachment.lambda_api_logs
+  ]
+
+  tags = {
+    Name = "${local.name_prefix}-competitors"
+  }
+}
+
+# -----------------------------------------------------------------------------
 # Step 5.4: Dead Letter Queue for collect_worker failed async invocations
 #
 # When collect_trigger invokes collect_worker with InvocationType="Event",

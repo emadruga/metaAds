@@ -34,7 +34,7 @@ echo ""
 # Step 1: Package the shared layer
 # ---------------------------------------------------------------------------
 
-echo "[1/9] Packaging shared layer..."
+echo "[1/10] Packaging shared layer..."
 
 SHARED_LAYER_DIR="${LAMBDA_LAYERS}/shared"
 LAYER_BUILD_DIR="${SHARED_LAYER_DIR}/build"
@@ -99,6 +99,7 @@ HANDLERS=(
   "collect_trigger"
   "collect_worker"
   "collect_scheduler"
+  "competitors"
 )
 
 STEP=2

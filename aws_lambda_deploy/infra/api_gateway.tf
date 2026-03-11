@@ -434,6 +434,65 @@ resource "aws_apigatewayv2_route" "saved_update" {
 }
 
 # -----------------------------------------------------------------------------
+# Routes: Competitors
+# -----------------------------------------------------------------------------
+
+resource "aws_apigatewayv2_integration" "competitors" {
+  api_id                 = aws_apigatewayv2_api.main.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.competitors.invoke_arn
+  payload_format_version = "2.0"
+}
+
+resource "aws_lambda_permission" "competitors" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.competitors.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*"
+}
+
+resource "aws_apigatewayv2_route" "competitors_list" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /api/competitors"
+  target             = "integrations/${aws_apigatewayv2_integration.competitors.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "competitors_add" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "POST /api/competitors"
+  target             = "integrations/${aws_apigatewayv2_integration.competitors.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "competitors_update" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "PATCH /api/competitors/{page_id}"
+  target             = "integrations/${aws_apigatewayv2_integration.competitors.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "competitors_delete" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "DELETE /api/competitors/{page_id}"
+  target             = "integrations/${aws_apigatewayv2_integration.competitors.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+resource "aws_apigatewayv2_route" "competitors_ads" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "GET /api/competitors/{page_id}/ads"
+  target             = "integrations/${aws_apigatewayv2_integration.competitors.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
+# -----------------------------------------------------------------------------
 # Outputs specific to API Gateway (also in outputs.tf)
 # -----------------------------------------------------------------------------
 

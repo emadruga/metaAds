@@ -640,6 +640,65 @@ class CollectionRun:
 
 
 # ---------------------------------------------------------------------------
+# Competitor
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Competitor:
+    """
+    A competitor advertiser page tracked by a user (global, not niche-scoped).
+
+    DynamoDB layout:
+        PK  = USER#<user_id>
+        SK  = COMPETITOR#<page_id>
+    """
+    user_id: str
+    page_id: str
+    page_name: str
+    notes: str = ""
+    added_at: str = ""
+
+    @staticmethod
+    def pk(user_id: str) -> str:
+        return f"USER#{user_id}"
+
+    @staticmethod
+    def sk(page_id: str) -> str:
+        return f"COMPETITOR#{page_id}"
+
+    def to_item(self) -> dict:
+        return {
+            "PK": self.pk(self.user_id),
+            "SK": self.sk(self.page_id),
+            "entity_type": "COMPETITOR",
+            "user_id": self.user_id,
+            "page_id": self.page_id,
+            "page_name": self.page_name,
+            "notes": self.notes,
+            "added_at": self.added_at,
+        }
+
+    @classmethod
+    def from_item(cls, item: dict) -> "Competitor":
+        return cls(
+            user_id=item["user_id"],
+            page_id=item["page_id"],
+            page_name=item["page_name"],
+            notes=item.get("notes", ""),
+            added_at=item.get("added_at", ""),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "user_id": self.user_id,
+            "page_id": self.page_id,
+            "page_name": self.page_name,
+            "notes": self.notes,
+            "added_at": self.added_at,
+        }
+
+
+# ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
 
