@@ -514,107 +514,102 @@ Use `localStorage` keyed by `niche_slug`. Persist state on filter change, view-m
 
 ---
 
-### 6. 🟡 MEDIUM — Implement periodic collection every 3 hours
+### 6. ✅ DONE — Implement periodic collection every 3 hours
+
+**Verified:** 2026-03-11
 
 **Description:**
 Ads should be automatically refreshed every 3 hours per niche (or per keyword) without manual user intervention.
 
-**Suggested Approach — EventBridge Scheduler:**
-1. Add an `aws_scheduler_schedule` Terraform resource that fires every 3 hours
-2. Target: `collect_trigger` Lambda (already handles collection orchestration)
-3. Payload: iterate all active niches from DynamoDB and trigger a worker per keyword
+**Implementation (all three pieces confirmed in code):**
 
-**Alternative — DynamoDB TTL + Stream:**
-Set a `next_collection_at` TTL field on each niche; a DynamoDB Stream triggers the collector when the item "expires".
+1. **EventBridge Scheduler** (`infra/eventbridge.tf`, lines 69-100):
+   - `aws_scheduler_schedule.collect_scheduler` with `cron(0 */3 * * ? *)` (every 3 hours UTC)
+   - Flexible time window of 15 minutes for jitter
+   - Targets the `collect_scheduler` Lambda
 
-**Files to update / create:**
-- `aws_lambda_deploy/infra/lambda.tf` — add EventBridge Scheduler resource
-- `aws_lambda_deploy/infra/iam.tf` — grant scheduler permission to invoke Lambda
-- `aws_lambda_deploy/lambda_src/collect_trigger/handler.py` — support "sweep all niches" mode
+2. **IAM permissions** (`infra/eventbridge.tf`, lines 23-63):
+   - `aws_iam_role.eventbridge_scheduler` with `scheduler.amazonaws.com` trust policy
+   - `aws_iam_role_policy.eventbridge_scheduler_invoke` grants `lambda:InvokeFunction` on the scheduler Lambda
+
+3. **`collect_scheduler` handler** (`lambda_src/collect_scheduler/handler.py`, 244 lines):
+   - Full "sweep all niches" mode: queries all niches with `auto_collect_enabled=True`
+   - `_should_collect()` checks interval and detects stuck/zombie runs (marks runs >2 min old with no `completed_at` as error before creating a new run)
+   - Fan-out: creates one `CollectionRun` per keyword and async-invokes `collect_worker` per keyword
+   - Staggered invocations: 2s between keywords, 5s between niches to avoid Meta API rate limit bursts
 
 ---
 
-### 6.5. 🟡 MEDIUM — Collection Health: Nav link, theme consistency, and History tab
+### 6.5. ✅ DONE — Collection Health: Nav link, theme consistency, and History tab
 
-#### a) Add "Collection Health" nav link in the Your Niches view
+**Verified:** 2026-03-11
+
+#### a) ✅ Add "Collection Health" nav link in the Your Niches view
 
 **Description:**
 Add a nav/menu option in the existing sidebar or top navigation bar (visible when the user is in the *Your Niches* section) that navigates to `/admin/collection-health` (`AdminCollectionView`). This gives users a quick path to monitor automated collection status without having to know the URL.
 
-**Suggested Approach:**
-- Locate the navigation component used in the niches area (likely `AppLayout.vue`, `Sidebar.vue`, or equivalent).
-- Add a new link item (e.g. "Collection Health" with a clock or activity icon) that routes to `/admin/collection-health`.
-- Apply the same active-link highlight used by existing nav items.
-
-**Files to update:**
-- `frontend/src/components/` — whichever component renders the sidebar/nav (e.g. `AppSidebar.vue`, `AppLayout.vue`)
-- `frontend/src/router/index.js` — confirm the `/admin/collection-health` route exists and has the correct `requiresAuth` guard
+**Implementation:**
+- `frontend/src/views/NicheSelectorView.vue`: `<router-link to="/admin/collection-health">📡 Collection Health</router-link>` present in the header nav
+- `frontend/src/router/index.js`: route `/admin/collection-health` → `AdminCollectionView`, `requiresAuth: true`
 
 ---
 
-#### b) White background & theme consistency in /admin/collection-health
+#### b) ✅ White background & theme consistency in /admin/collection-health
 
 **Description:**
-`AdminCollectionView.vue` currently uses a dark/grey background that does not match the white-card design language used in the rest of the app (e.g. `NicheWorkspaceView`, `SearchView`). Update the page to use a consistent white background with the standard card/container styling.
+`AdminCollectionView.vue` previously used a dark/grey background. It should match the white-card design language used in the rest of the app.
 
-**Suggested Approach:**
-- Wrap the page content in the same `<div class="page-container">` / `<div class="card">` pattern used by other views.
-- Remove any hardcoded dark background colours on the root element.
-- Ensure summary cards, table, and stale-niche callout use the same shadow/border/colour tokens already defined in the app's CSS or Tailwind config.
-
-**Files to update:**
-- `frontend/src/views/AdminCollectionView.vue` — update root wrapper classes and card styles
+**Implementation:**
+- `frontend/src/views/AdminCollectionView.vue` uses `var(--color-bg-primary)` for summary cards and the table, with `border: 1px solid var(--color-border)` and `box-shadow: var(--shadow-sm)` — consistent with the design system CSS variables used across other views.
 
 ---
 
-#### c) Add "History" tab in NicheWorkspaceView showing per-niche collection run log
+#### c) ✅ Add "History" tab in NicheWorkspaceView showing per-niche collection run log
 
 **Description:**
-Add a dedicated **"History"** tab inside each niche's workspace (`NicheWorkspaceView`) that shows a chronological log of past automated collection runs for that specific niche. Each row should display:
-- `started_at` — formatted timestamp (e.g. "Feb 27 at 03:00 AM")
-- `status` — colour-coded badge: `success` (green), `partial` (yellow), `failed` (red)
-- `ads_found` — total ads returned by Meta API
-- `ads_new` — newly inserted ads
-- `ads_updated` — ads whose `last_seen_at` was refreshed
-- `error_message` — shown only on failed/partial runs (collapsible or tooltip)
+A dedicated **"History"** tab inside each niche workspace showing a chronological log of past automated collection runs.
 
-**Suggested Approach (backend):**
-1. Add `GET /api/niches/{niche_slug}/collection-runs` endpoint in `lambda_src/niches/handler.py`.
-   - Calls `CollectionRepo.list_for_niche(niche_id, limit=50)` (method already exists).
-   - Returns a JSON array of run objects, newest-first.
-2. Add the API Gateway route in `infra/api_gateway.tf`.
+**Implementation (all sub-items confirmed):**
 
-**Suggested Approach (frontend):**
-1. Add `collectApi.getRuns(nicheSlug)` method to `frontend/src/services/api.js`.
-2. Add a `"History"` tab entry to the tab bar in `NicheWorkspaceView.vue`.
-3. Create `frontend/src/components/CollectionHistoryTab.vue` (or inline the panel) that:
-   - Fetches runs on mount (`onMounted`) and on explicit Refresh.
-   - Renders a table/list with the fields listed above.
-   - Shows a loading spinner and empty-state message when there are no runs.
+- **Backend endpoint** (`lambda_src/niches/handler.py`, lines 314-346):
+  - `GET /api/niches/{slug}/collection-runs` — returns up to 100 runs, newest-first, via `CollectionRepo.list_for_niche()`
+  - `GET /api/niches/{slug}/collection-runs/{run_id}` — single run status polling
+  - Both routes registered in `infra/api_gateway.tf` (lines 284-298)
 
-**Files to update / create:**
-- `lambda_src/niches/handler.py` — new `GET /api/niches/{slug}/collection-runs` handler
-- `infra/api_gateway.tf` — new route
-- `frontend/src/services/api.js` — `collectApi.getRuns(slug)`
-- `frontend/src/views/NicheWorkspaceView.vue` — add "History" tab
-- `frontend/src/components/CollectionHistoryTab.vue` — new component
+- **Frontend API** (`frontend/src/services/api.js`):
+  - `collectApi.getRuns(slug, params)` — `GET /niches/{slug}/collection-runs`
+  - `collectApi.collectStatus(slug, runId)` — single run polling
+
+- **"📋 History" tab** (`frontend/src/views/NicheWorkspaceView.vue`): tab link routes to `/n/{slug}/history`; route registered in `router/index.js` → `CollectionHistoryView`
+
+- **`CollectionHistoryView.vue`** (257 lines, implemented as a view rather than a tab component):
+  - Fetches on mount with `collectApi.getRuns(slug, { limit: 50 })`
+  - Table columns: Timestamp, Countries, Keyword, Solicited, Returned, New, Updated, #Ads, Status
+  - Colour-coded status badges: completed (green), failed (red), running/pending (blue)
+  - Refresh button, loading spinner, error and empty states
 
 ---
 
-### 7. 🟢 LOW — Point metads.app to CloudFront via Cloudflare
+### 7. ✅ DONE — Point metads.app to CloudFront via Cloudflare
+
+**Verified:** 2026-03-11 — `metads.app` is live and accessible from any browser/device.
 
 **Description:**
 Add a CNAME record in Cloudflare for `metads.app` (and `www.metads.app`) pointing to the CloudFront distribution, and configure the distribution to accept the custom domain with an ACM certificate.
 
-**Steps:**
-1. **ACM certificate** — request `metads.app` + `*.metads.app` in `us-east-1` (CloudFront requires us-east-1 for ACM certs)
-2. **Terraform** — add `aliases` and `viewer_certificate` to the `aws_cloudfront_distribution` resource in `infra/cloudfront.tf`
-3. **Cloudflare** — add `CNAME metads.app → d3ba787xl1d882.cloudfront.net` with proxy **disabled** (grey cloud — CloudFront handles TLS)
-4. **Terraform apply** to update the distribution
+**Implementation (all steps confirmed complete):**
+
+- `infra/dev.tfvars`: `custom_domain = "metads.app"` and `acm_certificate_arn = "arn:aws:acm:us-east-1:645069181643:certificate/d89a893a-5230-433f-bbc8-f028c64dbe63"`
+- `infra/cloudfront.tf` (line 83): `aliases = var.custom_domain != "" ? [var.custom_domain, "www.${var.custom_domain}"] : []`
+- `infra/cloudfront.tf` (lines 152-157): `viewer_certificate` block uses ACM cert, `ssl_support_method = "sni-only"`, `minimum_protocol_version = "TLSv1.2_2021"`
+- Terraform state: distribution `E9Q8645UTHPJD` deployed with both aliases active and ACM certificate applied
+- Cloudflare CNAME: `metads.app → d3ba787xl1d882.cloudfront.net` (proxy disabled) — confirmed live
 
 **Resources:**
 - CloudFront distribution: `E9Q8645UTHPJD` (`d3ba787xl1d882.cloudfront.net`)
-- Target domain: `metads.app`
+- ACM certificate: `arn:aws:acm:us-east-1:645069181643:certificate/d89a893a-5230-433f-bbc8-f028c64dbe63`
+- Live URL: `https://metads.app`
 
 ---
 

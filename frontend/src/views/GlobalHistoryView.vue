@@ -176,6 +176,15 @@ async function loadGlobalHistory(cursor = null) {
     } else {
       runs.value = d.data
     }
+
+    // Always sort newest-first after any load/append, since DynamoDB scan
+    // pages arrive in internal storage order — not chronological order.
+    runs.value.sort((a, b) => {
+      if (!a.started_at) return 1
+      if (!b.started_at) return -1
+      return new Date(b.started_at) - new Date(a.started_at)
+    })
+
     nextCursor.value = d.next_cursor || null
   } catch (err) {
     loadError.value = err.response?.data?.error || 'Failed to load global history'
