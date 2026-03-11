@@ -27,37 +27,109 @@
       <!-- Left panel: competitor metadata -->
       <aside class="meta-panel">
         <div class="meta-card">
-          <h2 class="meta-page-name">{{ competitor.page_name }}</h2>
+          <!-- Page identity -->
+          <div class="meta-identity">
+            <h2 class="meta-page-name">{{ competitor.page_name }}</h2>
+            <span v-if="competitor.category" class="category-badge">{{ competitor.category }}</span>
+          </div>
 
           <div class="meta-field">
             <span class="meta-label">Page ID</span>
             <span class="meta-value mono">{{ competitor.page_id }}</span>
           </div>
 
+          <div class="meta-field" v-if="competitor.fan_count != null">
+            <span class="meta-label">Page Followers</span>
+            <span class="meta-value">{{ formatNumber(competitor.fan_count) }}</span>
+          </div>
+
           <div class="meta-field">
-            <span class="meta-label">Added</span>
+            <span class="meta-label">Tracked Since</span>
             <span class="meta-value">{{ formatDate(competitor.added_at) }}</span>
           </div>
 
-          <div class="meta-field" v-if="adsData">
-            <span class="meta-label">Active Ads</span>
-            <span class="meta-value highlight">{{ adsData.count }}</span>
+          <!-- AD PORTFOLIO section -->
+          <div class="meta-section" v-if="agg">
+            <span class="meta-section-title">Ad Portfolio</span>
+            <div class="meta-stat-grid">
+              <div class="meta-stat">
+                <span class="meta-stat-value highlight">{{ agg.total_ads_found ?? adsData?.count ?? '—' }}</span>
+                <span class="meta-stat-label">Total Ads</span>
+              </div>
+              <div class="meta-stat">
+                <span class="meta-stat-value">{{ adsData?.count ?? '—' }}</span>
+                <span class="meta-stat-label">{{ statusFilter }} Ads</span>
+              </div>
+              <div class="meta-stat">
+                <span class="meta-stat-value">{{ agg.new_ads_last_30d ?? '—' }}</span>
+                <span class="meta-stat-label">New (30d)</span>
+              </div>
+              <div class="meta-stat">
+                <span class="meta-stat-value">{{ longestRunningAd?.days_active ?? '—' }}</span>
+                <span class="meta-stat-label">Max Days</span>
+              </div>
+              <div class="meta-stat" v-if="avgDaysActive !== null">
+                <span class="meta-stat-value">{{ avgDaysActive }}</span>
+                <span class="meta-stat-label">Avg Days</span>
+              </div>
+              <div class="meta-stat" v-if="agg.kill_threshold_days != null">
+                <span class="meta-stat-value">{{ agg.kill_threshold_days }}</span>
+                <span class="meta-stat-label">Kill Threshold</span>
+              </div>
+            </div>
           </div>
 
-          <div class="meta-field" v-if="longestRunningAd">
-            <span class="meta-label">Longest Running</span>
-            <span class="meta-value highlight">{{ longestRunningAd.days_active }} days</span>
+          <!-- SPEND ESTIMATES section -->
+          <div class="meta-section" v-if="agg && (agg.spend_all_time?.max > 0)">
+            <span class="meta-section-title">Spend Estimate</span>
+            <div class="spend-row">
+              <span class="spend-label">All-time</span>
+              <span class="spend-range">
+                {{ formatMoney(agg.spend_all_time.min) }} – {{ formatMoney(agg.spend_all_time.max) }}
+              </span>
+            </div>
+            <div class="spend-row" v-if="agg.spend_30d?.max > 0">
+              <span class="spend-label">Last 30 days</span>
+              <span class="spend-range">
+                {{ formatMoney(agg.spend_30d.min) }} – {{ formatMoney(agg.spend_30d.max) }}
+              </span>
+            </div>
+            <p class="spend-note">Mid-point of Meta's disclosed ranges</p>
           </div>
 
-          <div class="meta-field" v-if="avgDaysActive !== null">
-            <span class="meta-label">Avg. Days Active</span>
-            <span class="meta-value">{{ avgDaysActive }} days</span>
+          <!-- CREATIVE MIX section -->
+          <div class="meta-section" v-if="agg && Object.keys(agg.media_type_pct || {}).length > 0">
+            <span class="meta-section-title">Creative Mix</span>
+            <div class="mix-bars">
+              <div
+                v-for="(pct, type) in agg.media_type_pct"
+                :key="type"
+                class="mix-bar-row"
+              >
+                <span class="mix-type">{{ formatMediaType(type) }}</span>
+                <div class="mix-bar-track">
+                  <div class="mix-bar-fill" :style="{ width: pct + '%' }"></div>
+                </div>
+                <span class="mix-pct">{{ pct }}%</span>
+              </div>
+            </div>
           </div>
 
-          <div class="meta-field" v-if="platformSummary.length > 0">
-            <span class="meta-label">Platforms</span>
-            <div class="platform-tags">
-              <span v-for="p in platformSummary" :key="p" class="platform-tag">{{ p }}</span>
+          <!-- PLATFORM DISTRIBUTION section -->
+          <div class="meta-section" v-if="agg && Object.keys(agg.platform_pct || {}).length > 0">
+            <span class="meta-section-title">Platforms</span>
+            <div class="mix-bars">
+              <div
+                v-for="(pct, platform) in agg.platform_pct"
+                :key="platform"
+                class="mix-bar-row"
+              >
+                <span class="mix-type">{{ formatPlatformName(platform) }}</span>
+                <div class="mix-bar-track">
+                  <div class="mix-bar-fill platform" :style="{ width: pct + '%' }"></div>
+                </div>
+                <span class="mix-pct">{{ pct }}%</span>
+              </div>
             </div>
           </div>
 
@@ -135,11 +207,11 @@
           <table class="ads-table">
             <thead>
               <tr>
-                <th class="col-id">Library ID</th>
+                <th class="col-type">Type</th>
                 <th class="col-body">Ad Copy</th>
                 <th class="col-start">Started</th>
                 <th class="col-days">Days Active</th>
-                <th class="col-platforms">Platforms</th>
+                <th class="col-spend">Spend Est.</th>
                 <th class="col-status">Status</th>
               </tr>
             </thead>
@@ -150,8 +222,10 @@
                 class="ad-row"
                 @click="selectedAd = ad"
               >
-                <td class="col-id">
-                  <span class="ad-id-text">{{ ad.meta_ad_id }}</span>
+                <td class="col-type">
+                  <span :class="['media-badge', mediaClass(ad.media_type)]">
+                    {{ formatMediaType(ad.media_type) }}
+                  </span>
                 </td>
                 <td class="col-body">
                   <span class="ad-body-preview">{{ truncate(ad.body || ad.headline, 120) }}</span>
@@ -162,12 +236,15 @@
                     {{ ad.days_active ?? '—' }}
                   </span>
                 </td>
-                <td class="col-platforms">
-                  <span class="platforms-text">{{ formatPlatforms(ad.platforms) }}</span>
+                <td class="col-spend">
+                  <span v-if="ad.spend" class="spend-text">
+                    {{ formatMoney(ad.spend.lower_bound) }}–{{ formatMoney(ad.spend.upper_bound) }}
+                  </span>
+                  <span v-else class="spend-text muted">—</span>
                 </td>
                 <td class="col-status">
                   <span :class="['status-dot', ad.is_active ? 'active' : 'inactive']">
-                    {{ ad.is_active ? 'Active' : 'Inactive' }}
+                    {{ ad.is_active ? 'Active' : 'Ended' }}
                   </span>
                 </td>
               </tr>
@@ -217,6 +294,7 @@
   const competitor = computed(() => store.competitorByPageId(pageId.value))
 
   const adsData = computed(() => store.getAdsForPage(pageId.value))
+  const agg = computed(() => adsData.value?.aggregates || null)
 
   const filteredAds = computed(() => adsData.value?.ads || [])
 
@@ -233,12 +311,6 @@
     if (!ads.length) return null
     const sum = ads.reduce((s, a) => s + a.days_active, 0)
     return Math.round(sum / ads.length)
-  })
-
-  const platformSummary = computed(() => {
-    const set = new Set()
-    filteredAds.value.forEach((a) => (a.platforms || []).forEach((p) => set.add(p)))
-    return [...set]
   })
 
   const statusLabel = computed(() => {
@@ -286,6 +358,41 @@
     if (!platforms || !platforms.length) return '—'
     const labels = { facebook: 'FB', instagram: 'IG', messenger: 'MSG', audience_network: 'AN' }
     return platforms.map((p) => labels[p] || p).join(', ')
+  }
+
+  function formatPlatformName(p) {
+    const labels = { facebook: 'Facebook', instagram: 'Instagram', messenger: 'Messenger', audience_network: 'Audience Network' }
+    return labels[p] || p
+  }
+
+  function formatNumber(n) {
+    if (n == null) return '—'
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+    return String(n)
+  }
+
+  function formatMoney(raw) {
+    const n = parseInt(raw || 0, 10)
+    if (!n) return '$0'
+    if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(1) + 'M'
+    if (n >= 1_000) return '$' + Math.round(n / 1_000) + 'K'
+    return '$' + n
+  }
+
+  function formatMediaType(type) {
+    if (!type) return '?'
+    const map = { VIDEO: 'Video', IMAGE: 'Image', CAROUSEL: 'Carousel', OTHER: 'Other' }
+    return map[type.toUpperCase()] || type
+  }
+
+  function mediaClass(type) {
+    if (!type) return 'media-other'
+    const t = type.toUpperCase()
+    if (t === 'VIDEO') return 'media-video'
+    if (t === 'IMAGE') return 'media-image'
+    if (t === 'CAROUSEL') return 'media-carousel'
+    return 'media-other'
   }
 
   function truncate(text, max) {
@@ -415,6 +522,12 @@
     gap: var(--spacing-4);
   }
 
+  .meta-identity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
+
   .meta-page-name {
     font-size: var(--font-size-lg);
     font-weight: 700;
@@ -422,6 +535,136 @@
     margin: 0;
     line-height: 1.3;
     word-break: break-word;
+  }
+
+  .category-badge {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    background-color: var(--color-gray-100);
+    border-radius: var(--radius-full);
+    padding: 2px var(--spacing-2);
+    align-self: flex-start;
+  }
+
+  // Section groupings within left panel
+  .meta-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+    padding-top: var(--spacing-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .meta-section-title {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  // Stat grid inside Ad Portfolio section
+  .meta-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-2) var(--spacing-3);
+  }
+
+  .meta-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .meta-stat-value {
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    color: var(--color-gray-900);
+
+    &.highlight {
+      color: var(--color-primary-600);
+      font-size: var(--font-size-xl);
+    }
+  }
+
+  .meta-stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  // Spend estimate
+  .spend-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--spacing-2);
+  }
+
+  .spend-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .spend-range {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    text-align: right;
+  }
+
+  .spend-note {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    margin: 0;
+    font-style: italic;
+  }
+
+  // Creative mix / platform bar charts
+  .mix-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .mix-bar-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 32px;
+    align-items: center;
+    gap: var(--spacing-2);
+  }
+
+  .mix-type {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mix-bar-track {
+    height: 6px;
+    background-color: var(--color-gray-100);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .mix-bar-fill {
+    height: 100%;
+    background-color: var(--color-primary-400);
+    border-radius: var(--radius-full);
+    transition: width 0.4s ease;
+
+    &.platform {
+      background-color: var(--color-success-400, #34d399);
+    }
+  }
+
+  .mix-pct {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-align: right;
   }
 
   .meta-field {
@@ -454,20 +697,6 @@
       font-weight: 700;
       color: var(--color-primary-600);
     }
-  }
-
-  .platform-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-1);
-  }
-
-  .platform-tag {
-    font-size: var(--font-size-xs);
-    padding: 2px var(--spacing-2);
-    background-color: var(--color-gray-100);
-    border-radius: var(--radius-full);
-    color: var(--color-text-secondary);
   }
 
   .meta-notes-section {
@@ -628,12 +857,34 @@
     }
   }
 
-  .col-id { width: 130px; }
+  .col-type { width: 80px; }
   .col-body { }
-  .col-start { width: 120px; white-space: nowrap; }
-  .col-days { width: 100px; text-align: center; }
-  .col-platforms { width: 120px; }
-  .col-status { width: 90px; }
+  .col-start { width: 110px; white-space: nowrap; }
+  .col-days { width: 90px; text-align: center; }
+  .col-spend { width: 130px; }
+  .col-status { width: 80px; }
+
+  .media-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    &.media-video    { background-color: #ede9fe; color: #6d28d9; }
+    &.media-image    { background-color: #dbeafe; color: #1d4ed8; }
+    &.media-carousel { background-color: #fef3c7; color: #92400e; }
+    &.media-other    { background-color: var(--color-gray-100); color: var(--color-gray-600); }
+  }
+
+  .spend-text {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+
+    &.muted { color: var(--color-text-muted); }
+  }
 
   .ad-id-text {
     font-family: monospace;
@@ -671,11 +922,6 @@
       background-color: var(--color-gray-100);
       color: var(--color-gray-600);
     }
-  }
-
-  .platforms-text {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
   }
 
   .status-dot {

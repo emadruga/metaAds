@@ -71,6 +71,32 @@ class CompetitorRepo:
         return True
 
     @staticmethod
+    def update_profile(
+        user_id: str,
+        page_id: str,
+        *,
+        fan_count: int | None = None,
+        category: str = "",
+        about: str = "",
+    ) -> bool:
+        """Update page-profile metadata (fan_count, category, about)."""
+        table = get_table()
+        table.update_item(
+            Key={
+                "PK": Competitor.pk(user_id),
+                "SK": Competitor.sk(page_id),
+            },
+            UpdateExpression="SET category = :cat, about = :about"
+            + (", fan_count = :fc" if fan_count is not None else ""),
+            ExpressionAttributeValues={
+                ":cat": category,
+                ":about": about,
+                **({":fc": fan_count} if fan_count is not None else {}),
+            },
+        )
+        return True
+
+    @staticmethod
     def delete(user_id: str, page_id: str) -> bool:
         """Hard-delete a competitor record."""
         table = get_table()

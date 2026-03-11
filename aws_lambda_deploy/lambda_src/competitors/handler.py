@@ -97,6 +97,7 @@ _META_BASE = "https://graph.facebook.com/v24.0"
 
 _AD_FIELDS = [
     "id",
+    "ad_creation_time",
     "ad_creative_bodies",
     "ad_creative_link_captions",
     "ad_creative_link_titles",
@@ -108,7 +109,32 @@ _AD_FIELDS = [
     "page_id",
     "platforms",
     "publisher_platforms",
+    "media_type",
+    "spend",
+    "impressions",
 ]
+
+
+def _get_page_profile(page_id: str) -> dict:
+    """
+    Fetch public page metadata (fan_count, category, about) from the Graph API.
+    Returns an empty dict on any error — this is best-effort enrichment.
+    """
+    try:
+        token = _get_meta_token()
+        resp = requests.get(
+            f"{_META_BASE}/{page_id}",
+            params={
+                "access_token": token,
+                "fields": "name,fan_count,category,about",
+            },
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception as exc:
+        logger.warning(f"Could not fetch page profile for {page_id}: {exc}")
+    return {}
 
 
 def _search_by_page_name(page_name: str) -> List[dict]:
@@ -192,6 +218,9 @@ def _format_ad(raw: dict) -> dict:
     captions = raw.get("ad_creative_link_captions") or []
     platforms = raw.get("platforms") or raw.get("publisher_platforms") or []
 
+    spend_raw = raw.get("spend") or {}
+    impressions_raw = raw.get("impressions") or {}
+
     return {
         "meta_ad_id": raw.get("id"),
         "page_id": raw.get("page_id"),
@@ -200,12 +229,22 @@ def _format_ad(raw: dict) -> dict:
         "headline": titles[0] if titles else "",
         "description": descriptions[0] if descriptions else "",
         "link_caption": captions[0] if captions else "",
+        "creation_time": raw.get("ad_creation_time"),
         "start_date": start_str,
         "end_date": stop_str,
         "is_active": stop_str is None,
         "days_active": days_active,
         "snapshot_url": raw.get("ad_snapshot_url"),
         "platforms": platforms,
+        "media_type": raw.get("media_type"),
+        "spend": {
+            "lower_bound": spend_raw.get("lower_bound"),
+            "upper_bound": spend_raw.get("upper_bound"),
+        } if spend_raw else None,
+        "impressions": {
+            "lower_bound": impressions_raw.get("lower_bound"),
+            "upper_bound": impressions_raw.get("upper_bound"),
+        } if impressions_raw else None,
     }
 
 
@@ -273,12 +312,24 @@ def _add_competitor(event: dict) -> dict:
             "error": f"'{existing.page_name}' is already in your competitors list.",
         })
 
+    # Enrich with page profile metadata from Graph API (best-effort)
+    profile = _get_page_profile(page_id)
+    fan_count = profile.get("fan_count")
+    if fan_count is not None:
+        try:
+            fan_count = int(fan_count)
+        except (TypeError, ValueError):
+            fan_count = None
+
     competitor = Competitor(
         user_id=user_id,
         page_id=page_id,
         page_name=page_name,
         notes=data.get("notes", ""),
         added_at=now_iso8601(),
+        fan_count=fan_count,
+        category=profile.get("category", ""),
+        about=profile.get("about", ""),
     )
     CompetitorRepo.create(competitor)
     logger.info(f"User {user_id} added competitor: {page_name} (page_id={page_id})")
@@ -356,12 +407,96 @@ def _get_competitor_ads(event: dict) -> dict:
     # Sort by days_active descending so longest-running ads appear first
     ads.sort(key=lambda a: a.get("days_active") or 0, reverse=True)
 
+    # ----------------------------------------------------------------
+    # Compute aggregate intelligence from the fetched ad set
+    # ----------------------------------------------------------------
+    from datetime import timedelta
+
+    now = datetime.now(tz=timezone.utc)
+    cutoff_30d = now - timedelta(days=30)
+
+    total_spend_min = 0
+    total_spend_max = 0
+    spend_30d_min = 0
+    spend_30d_max = 0
+    total_impressions_min = 0
+    total_impressions_max = 0
+    media_counts: dict = {}
+    platform_counts: dict = {}
+    new_last_30d = 0
+    kill_days: list = []
+
+    for ad in ads:
+        # Spend
+        sp = ad.get("spend") or {}
+        lo = int(sp.get("lower_bound") or 0)
+        hi = int(sp.get("upper_bound") or lo)
+        total_spend_min += lo
+        total_spend_max += hi
+
+        # Impressions
+        imp = ad.get("impressions") or {}
+        total_impressions_min += int(imp.get("lower_bound") or 0)
+        total_impressions_max += int(imp.get("upper_bound") or 0)
+
+        # New in last 30 days
+        start_str = ad.get("start_date")
+        if start_str:
+            try:
+                start = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+                if start >= cutoff_30d:
+                    new_last_30d += 1
+                    spend_30d_min += lo
+                    spend_30d_max += hi
+            except Exception:
+                pass
+
+        # Media type distribution
+        mt = (ad.get("media_type") or "OTHER").upper()
+        media_counts[mt] = media_counts.get(mt, 0) + 1
+
+        # Platform distribution
+        for p in (ad.get("platforms") or []):
+            platform_counts[p] = platform_counts.get(p, 0) + 1
+
+        # Kill threshold: collect days_active for finished ads
+        if not ad.get("is_active") and ad.get("days_active") is not None:
+            kill_days.append(ad["days_active"])
+
+    total = len(ads)
+
+    media_pct = (
+        {k: round(v / total * 100) for k, v in media_counts.items()}
+        if total > 0 else {}
+    )
+    platform_pct = (
+        {k: round(v / total * 100) for k, v in platform_counts.items()}
+        if total > 0 else {}
+    )
+
+    kill_threshold: int | None = None
+    if kill_days:
+        kill_days_sorted = sorted(kill_days)
+        kill_threshold = kill_days_sorted[len(kill_days_sorted) // 2]
+
+    aggregates = {
+        "total_ads_found": total,
+        "new_ads_last_30d": new_last_30d,
+        "spend_all_time": {"min": total_spend_min, "max": total_spend_max},
+        "spend_30d": {"min": spend_30d_min, "max": spend_30d_max},
+        "impressions_all_time": {"min": total_impressions_min, "max": total_impressions_max},
+        "media_type_pct": media_pct,
+        "platform_pct": platform_pct,
+        "kill_threshold_days": kill_threshold,
+    }
+
     return _response(200, {
         "success": True,
         "data": ads,
         "count": len(ads),
         "page_id": page_id,
         "page_name": competitor.page_name,
+        "aggregates": aggregates,
     })
 
 

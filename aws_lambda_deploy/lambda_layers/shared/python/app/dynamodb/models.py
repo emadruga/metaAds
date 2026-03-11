@@ -657,6 +657,10 @@ class Competitor:
     page_name: str
     notes: str = ""
     added_at: str = ""
+    # Page profile metadata (fetched from Graph API at add-time)
+    fan_count: Optional[int] = None
+    category: str = ""
+    about: str = ""
 
     @staticmethod
     def pk(user_id: str) -> str:
@@ -667,7 +671,7 @@ class Competitor:
         return f"COMPETITOR#{page_id}"
 
     def to_item(self) -> dict:
-        return {
+        item: dict = {
             "PK": self.pk(self.user_id),
             "SK": self.sk(self.page_id),
             "entity_type": "COMPETITOR",
@@ -676,16 +680,25 @@ class Competitor:
             "page_name": self.page_name,
             "notes": self.notes,
             "added_at": self.added_at,
+            "category": self.category,
+            "about": self.about,
         }
+        if self.fan_count is not None:
+            item["fan_count"] = self.fan_count
+        return item
 
     @classmethod
     def from_item(cls, item: dict) -> "Competitor":
+        fan_count_raw = item.get("fan_count")
         return cls(
             user_id=item["user_id"],
             page_id=item["page_id"],
             page_name=item["page_name"],
             notes=item.get("notes", ""),
             added_at=item.get("added_at", ""),
+            fan_count=int(fan_count_raw) if fan_count_raw is not None else None,
+            category=item.get("category", ""),
+            about=item.get("about", ""),
         )
 
     def to_dict(self) -> dict:
@@ -695,6 +708,9 @@ class Competitor:
             "page_name": self.page_name,
             "notes": self.notes,
             "added_at": self.added_at,
+            "fan_count": self.fan_count,
+            "category": self.category,
+            "about": self.about,
         }
 
 

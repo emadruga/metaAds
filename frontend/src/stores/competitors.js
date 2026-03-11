@@ -53,6 +53,7 @@ export const useCompetitorsStore = defineStore('competitors', {
           ads: response.data.data || [],
           page_name: response.data.page_name,
           count: response.data.count,
+          aggregates: response.data.aggregates || {},
           fetchedAt: new Date().toISOString(),
         }
         return this.adsCache[pageId]
