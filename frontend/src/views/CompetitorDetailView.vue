@@ -170,8 +170,8 @@
           </div>
           <div class="toolbar-right">
             <select v-model="statusFilter" class="status-select" @change="loadAds">
-              <option value="ACTIVE">Active only</option>
               <option value="ALL">All ads</option>
+              <option value="ACTIVE">Active only</option>
               <option value="INACTIVE">Inactive only</option>
             </select>
             <button
@@ -287,7 +287,7 @@
   const pageId = computed(() => route.params.pageId)
 
   const selectedAd = ref(null)
-  const statusFilter = ref('ACTIVE')
+  const statusFilter = ref('ALL')
   const storeError = ref('')
   const notesValue = ref('')
 

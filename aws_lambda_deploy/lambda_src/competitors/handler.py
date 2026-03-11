@@ -95,6 +95,10 @@ def _get_meta_token() -> str:
 
 _META_BASE = "https://graph.facebook.com/v24.0"
 
+# Broadened country list used as fallback when stored country yields 0 ads.
+# Covers the main markets where Brazilian / Lusophone advertisers tend to run.
+_MAJOR_MARKETS = ["BR", "PT", "MX", "AR", "US", "ES", "CO", "CL", "PE", "CA", "FR", "DE", "GB", "AU", "JP"]
+
 _AD_FIELDS = [
     "id",
     "ad_creation_time",
@@ -385,12 +389,29 @@ def _get_competitor_ads(event: dict) -> dict:
         return _response(404, {"success": False, "error": "Competitor not found"})
 
     limit = min(int(params.get("limit", 100)), 200)
-    ad_active_status = params.get("status", "ACTIVE").upper()
+    # Default to ALL so we surface both active and historical ads (like the ANDROMEDA doc recommends)
+    ad_active_status = params.get("status", "ALL").upper()
     countries_raw = params.get("countries") or competitor.countries or "BR"
     countries = [c.strip() for c in countries_raw.split(",") if c.strip()]
 
     try:
         raw_ads = _fetch_ads_for_page(page_id, countries, ad_active_status, limit)
+
+        # Cascade retry: if stored country returns 0, widen to major markets
+        if not raw_ads:
+            broad = list(dict.fromkeys(countries + _MAJOR_MARKETS))
+            logger.info(
+                f"0 ads for page {page_id} with countries={countries}, "
+                f"retrying with {len(broad)} markets"
+            )
+            raw_ads = _fetch_ads_for_page(page_id, broad, ad_active_status, limit)
+
+        # Final fallback: broad markets + ALL statuses
+        if not raw_ads and ad_active_status != "ALL":
+            broad = list(dict.fromkeys(countries + _MAJOR_MARKETS))
+            logger.info(f"Still 0 ads, retrying with ALL statuses + broad markets")
+            raw_ads = _fetch_ads_for_page(page_id, broad, "ALL", limit)
+
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 0
         logger.error(f"Meta API HTTP {status} fetching ads for page {page_id}: {exc}")
