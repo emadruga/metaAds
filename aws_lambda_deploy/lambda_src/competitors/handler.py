@@ -206,6 +206,9 @@ def _group_by_variant(ads: List[dict]) -> List[dict]:
         if new_start and (not g["start_date"] or new_start < g["start_date"]):
             g["start_date"] = new_start
 
+    for g in groups.values():
+        g["ads"].sort(key=lambda a: a.get("start_date") or "")
+
     return [groups[k] for k in order]
 
 
