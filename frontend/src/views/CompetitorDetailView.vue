@@ -208,15 +208,25 @@
             <thead>
               <tr>
                 <th class="col-expand"></th>
-                <th class="col-type">Type</th>
-                <th class="col-body">Ad Copy</th>
-                <th class="col-start">Started</th>
-                <th class="col-days">Days Active</th>
-                <th class="col-status">Status</th>
+                <th class="col-type col-sortable" @click="sortBy('type')">
+                  Type <span class="sort-indicator">{{ sortIndicator('type') }}</span>
+                </th>
+                <th class="col-body col-sortable" @click="sortBy('body')">
+                  Ad Copy <span class="sort-indicator">{{ sortIndicator('body') }}</span>
+                </th>
+                <th class="col-start col-sortable" @click="sortBy('start')">
+                  Started <span class="sort-indicator">{{ sortIndicator('start') }}</span>
+                </th>
+                <th class="col-days col-sortable" @click="sortBy('days')">
+                  Days Active <span class="sort-indicator">{{ sortIndicator('days') }}</span>
+                </th>
+                <th class="col-status col-sortable" @click="sortBy('status')">
+                  Status <span class="sort-indicator">{{ sortIndicator('status') }}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              <template v-for="group in filteredAds" :key="group.variant_key">
+              <template v-for="group in sortedAds" :key="group.variant_key">
                 <!-- Group row -->
                 <tr class="ad-row" @click="selectedAd = group.ads[0]">
                   <td class="col-expand">
@@ -327,6 +337,8 @@
   const storeError = ref('')
   const notesValue = ref('')
   const expandedGroups = ref(new Set())
+  const sortKey = ref('days')
+  const sortDir = ref('desc')
 
   const competitor = computed(() => store.competitorByPageId(pageId.value))
 
@@ -334,6 +346,57 @@
   const agg = computed(() => adsData.value?.aggregates || null)
 
   const filteredAds = computed(() => adsData.value?.ads || [])
+
+  const sortedAds = computed(() => {
+    const list = [...filteredAds.value]
+    const dir = sortDir.value === 'asc' ? 1 : -1
+
+    list.sort((a, b) => {
+      let av, bv
+      switch (sortKey.value) {
+        case 'type':
+          av = (a.media_type || '').toLowerCase()
+          bv = (b.media_type || '').toLowerCase()
+          break
+        case 'body':
+          av = (a.body || a.headline || '').toLowerCase()
+          bv = (b.body || b.headline || '').toLowerCase()
+          break
+        case 'start':
+          av = a.start_date || ''
+          bv = b.start_date || ''
+          break
+        case 'days':
+          av = a.days_active ?? -1
+          bv = b.days_active ?? -1
+          break
+        case 'status':
+          av = a.is_active ? 1 : 0
+          bv = b.is_active ? 1 : 0
+          break
+        default:
+          return 0
+      }
+      if (av < bv) return -dir
+      if (av > bv) return dir
+      return 0
+    })
+    return list
+  })
+
+  function sortBy(key) {
+    if (sortKey.value === key) {
+      sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+    } else {
+      sortKey.value = key
+      sortDir.value = key === 'body' || key === 'type' ? 'asc' : 'desc'
+    }
+  }
+
+  function sortIndicator(key) {
+    if (sortKey.value !== key) return '↕'
+    return sortDir.value === 'asc' ? '↑' : '↓'
+  }
 
   // Flatten all individual ads across groups for stats
   const allIndividualAds = computed(() =>
@@ -902,6 +965,26 @@
       padding: var(--spacing-2) var(--spacing-3);
       border-bottom: 1px solid var(--color-border);
       vertical-align: middle;
+    }
+  }
+
+  .col-sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+
+    &:hover {
+      color: var(--color-primary-600);
+    }
+  }
+
+  .sort-indicator {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-left: 2px;
+
+    .col-sortable:hover & {
+      opacity: 1;
     }
   }
 
