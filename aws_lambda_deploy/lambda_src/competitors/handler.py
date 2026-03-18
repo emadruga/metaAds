@@ -278,11 +278,14 @@ def _format_ad(raw: dict) -> dict:
     if start_str:
         try:
             start = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
-            end = (
-                datetime.fromisoformat(stop_str.replace("Z", "+00:00"))
-                if stop_str
-                else datetime.now(tz=timezone.utc)
-            )
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=timezone.utc)
+            if stop_str:
+                end = datetime.fromisoformat(stop_str.replace("Z", "+00:00"))
+                if end.tzinfo is None:
+                    end = end.replace(tzinfo=timezone.utc)
+            else:
+                end = datetime.now(tz=timezone.utc)
             days_active = max(0, (end - start).days)
         except Exception:
             pass
