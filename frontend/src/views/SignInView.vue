@@ -12,6 +12,11 @@
         :signUpUrl="'/sign-up'"
         :afterSignInUrl="redirectUrl"
       />
+
+      <p class="auth-legal">
+        By signing in you agree to our
+        <router-link to="/privacy">Privacy Policy</router-link>.
+      </p>
     </div>
   </div>
 </template>
@@ -62,5 +67,21 @@ const redirectUrl = computed(() => {
 .auth-tagline {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+}
+
+.auth-legal {
+  margin-top: var(--spacing-4);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+
+  a {
+    color: var(--color-primary-600, #2563eb);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 </style>

@@ -24,6 +24,12 @@ const routes = [
     component: () => import('@/views/SignUpView.vue'),
     meta: { requiresAuth: false }
   },
+  {
+    path: '/privacy',
+    name: 'PrivacyPolicy',
+    component: () => import('@/views/PrivacyPolicyView.vue'),
+    meta: { requiresAuth: false }
+  },
 
   // Protected routes
   {
