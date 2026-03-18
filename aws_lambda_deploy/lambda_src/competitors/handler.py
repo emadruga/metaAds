@@ -156,24 +156,27 @@ def _normalize_media_type(raw: str | None) -> str:
     return "OTHER"
 
 
-def _variant_key(page_name: str, headline: str) -> str:
-    """Stable 12-char hash of page_name|headline (lowercase)."""
-    raw = f"{(page_name or '').strip().lower()}|{(headline or '').strip().lower()}"
+def _variant_key(page_name: str, headline: str, is_active: bool) -> str:
+    """Stable 12-char hash of page_name|headline|active (lowercase).
+    Active and inactive ads with the same headline form separate groups."""
+    active_flag = "1" if is_active else "0"
+    raw = f"{(page_name or '').strip().lower()}|{(headline or '').strip().lower()}|{active_flag}"
     return hashlib.md5(raw.encode()).hexdigest()[:12]
 
 
 def _group_by_variant(ads: List[dict]) -> List[dict]:
     """
-    Group pre-sorted ads by (page_name, headline).
-    Each group keeps the max days_active and is_active=True if any variant is active.
-    The group's representative fields (body, start_date, etc.) come from the
-    first (longest-running) variant since ads are pre-sorted by days_active desc.
+    Group pre-sorted ads by (page_name, headline, is_active).
+    Active and inactive ads are kept in separate groups.
+    The group's start_date is the oldest (minimum) start_date across all variants.
+    The group's days_active is the maximum across all variants.
     """
     groups: dict[str, dict] = {}
     order: List[str] = []
 
     for ad in ads:
-        key = _variant_key(ad.get("page_name", ""), ad.get("headline", ""))
+        is_active = ad.get("is_active", False)
+        key = _variant_key(ad.get("page_name", ""), ad.get("headline", ""), is_active)
         if key not in groups:
             groups[key] = {
                 "variant_key": key,
@@ -185,7 +188,7 @@ def _group_by_variant(ads: List[dict]) -> List[dict]:
                 "media_type": ad.get("media_type"),
                 "start_date": ad.get("start_date"),
                 "days_active": ad.get("days_active") or 0,
-                "is_active": ad.get("is_active", False),
+                "is_active": is_active,
                 "snapshot_url": ad.get("snapshot_url"),
                 "platforms": ad.get("platforms", []),
                 "count": 0,
@@ -198,8 +201,10 @@ def _group_by_variant(ads: List[dict]) -> List[dict]:
         g["count"] += 1
         if (ad.get("days_active") or 0) > g["days_active"]:
             g["days_active"] = ad["days_active"]
-        if ad.get("is_active"):
-            g["is_active"] = True
+        # Keep the oldest (minimum) start_date across the group
+        new_start = ad.get("start_date")
+        if new_start and (not g["start_date"] or new_start < g["start_date"]):
+            g["start_date"] = new_start
 
     return [groups[k] for k in order]
 
