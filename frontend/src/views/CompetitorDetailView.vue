@@ -207,47 +207,83 @@
           <table class="ads-table">
             <thead>
               <tr>
+                <th class="col-expand"></th>
                 <th class="col-type">Type</th>
                 <th class="col-body">Ad Copy</th>
                 <th class="col-start">Started</th>
                 <th class="col-days">Days Active</th>
-                <th class="col-spend">Spend Est.</th>
                 <th class="col-status">Status</th>
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="ad in filteredAds"
-                :key="ad.meta_ad_id"
-                class="ad-row"
-                @click="selectedAd = ad"
-              >
-                <td class="col-type">
-                  <span :class="['media-badge', mediaClass(ad.media_type)]">
-                    {{ formatMediaType(ad.media_type) }}
-                  </span>
-                </td>
-                <td class="col-body">
-                  <span class="ad-body-preview">{{ truncate(ad.body || ad.headline, 120) }}</span>
-                </td>
-                <td class="col-start">{{ formatDate(ad.start_date) }}</td>
-                <td class="col-days">
-                  <span :class="['days-badge', daysClass(ad.days_active)]">
-                    {{ ad.days_active ?? '—' }}
-                  </span>
-                </td>
-                <td class="col-spend">
-                  <span v-if="ad.spend" class="spend-text">
-                    {{ formatMoney(ad.spend.lower_bound) }}–{{ formatMoney(ad.spend.upper_bound) }}
-                  </span>
-                  <span v-else class="spend-text muted">—</span>
-                </td>
-                <td class="col-status">
-                  <span :class="['status-dot', ad.is_active ? 'active' : 'inactive']">
-                    {{ ad.is_active ? 'Active' : 'Ended' }}
-                  </span>
-                </td>
-              </tr>
+              <template v-for="group in filteredAds" :key="group.variant_key">
+                <!-- Group row -->
+                <tr class="ad-row" @click="selectedAd = group.ads[0]">
+                  <td class="col-expand">
+                    <button
+                      v-if="group.count > 1"
+                      class="expand-btn"
+                      @click.stop="toggleGroup(group.variant_key)"
+                      :title="expandedGroups.has(group.variant_key) ? 'Collapse' : 'Expand variants'"
+                    >
+                      {{ expandedGroups.has(group.variant_key) ? '−' : '+' }}
+                      <span class="variant-count">{{ group.count }}</span>
+                    </button>
+                  </td>
+                  <td class="col-type">
+                    <span :class="['media-badge', mediaClass(group.media_type)]">
+                      {{ formatMediaType(group.media_type) }}
+                    </span>
+                  </td>
+                  <td class="col-body">
+                    <span class="ad-body-preview">{{ truncate(group.body || group.headline, 120) }}</span>
+                  </td>
+                  <td class="col-start">{{ formatDate(group.start_date) }}</td>
+                  <td class="col-days">
+                    <span :class="['days-badge', daysClass(group.days_active)]">
+                      {{ group.days_active ?? '—' }}
+                    </span>
+                  </td>
+                  <td class="col-status">
+                    <span :class="['status-dot', group.is_active ? 'active' : 'inactive']">
+                      {{ group.is_active ? 'Active' : 'Ended' }}
+                    </span>
+                  </td>
+                </tr>
+                <!-- Variant child rows -->
+                <template v-if="expandedGroups.has(group.variant_key)">
+                  <tr
+                    v-for="(ad, i) in group.ads"
+                    :key="ad.meta_ad_id"
+                    class="ad-row variant-row"
+                    @click="selectedAd = ad"
+                  >
+                    <td class="col-expand">
+                      <span class="variant-indent">└</span>
+                    </td>
+                    <td class="col-type">
+                      <span :class="['media-badge', mediaClass(ad.media_type)]">
+                        {{ formatMediaType(ad.media_type) }}
+                      </span>
+                    </td>
+                    <td class="col-body">
+                      <span class="variant-label">Variant {{ i + 1 }}</span>
+                      <span class="ad-body-preview">{{ truncate(ad.body || ad.headline, 100) }}</span>
+                    </td>
+                    <td class="col-start">{{ formatDate(ad.start_date) }}</td>
+                    <td class="col-days">
+                      <span :class="['days-badge', daysClass(ad.days_active)]">
+                        {{ ad.days_active ?? '—' }}
+                      </span>
+                    </td>
+                    <td class="col-status">
+                      <span :class="['status-dot', ad.is_active ? 'active' : 'inactive']">
+                        {{ ad.is_active ? 'Active' : 'Ended' }}
+                      </span>
+                    </td>
+                  </tr>
+                </template>
+              </template>
             </tbody>
           </table>
         </div>
@@ -290,6 +326,7 @@
   const statusFilter = ref('ALL')
   const storeError = ref('')
   const notesValue = ref('')
+  const expandedGroups = ref(new Set())
 
   const competitor = computed(() => store.competitorByPageId(pageId.value))
 
@@ -298,8 +335,13 @@
 
   const filteredAds = computed(() => adsData.value?.ads || [])
 
+  // Flatten all individual ads across groups for stats
+  const allIndividualAds = computed(() =>
+    filteredAds.value.flatMap((g) => g.ads || [])
+  )
+
   const longestRunningAd = computed(() => {
-    const ads = filteredAds.value
+    const ads = allIndividualAds.value
     if (!ads.length) return null
     return ads.reduce((best, a) =>
       (a.days_active || 0) > (best.days_active || 0) ? a : best
@@ -307,11 +349,17 @@
   })
 
   const avgDaysActive = computed(() => {
-    const ads = filteredAds.value.filter((a) => a.days_active != null)
+    const ads = allIndividualAds.value.filter((a) => a.days_active != null)
     if (!ads.length) return null
     const sum = ads.reduce((s, a) => s + a.days_active, 0)
     return Math.round(sum / ads.length)
   })
+
+  function toggleGroup(variantKey) {
+    const s = new Set(expandedGroups.value)
+    s.has(variantKey) ? s.delete(variantKey) : s.add(variantKey)
+    expandedGroups.value = s
+  }
 
   const statusLabel = computed(() => {
     const map = { ACTIVE: 'Active', INACTIVE: 'Inactive', ALL: 'All' }
@@ -382,7 +430,7 @@
 
   function formatMediaType(type) {
     if (!type) return '?'
-    const map = { VIDEO: 'Video', IMAGE: 'Image', CAROUSEL: 'Carousel', OTHER: 'Other' }
+    const map = { VIDEO: 'Video', IMAGE: 'Image', PHOTO: 'Image', CAROUSEL: 'Carousel', OTHER: 'Other' }
     return map[type.toUpperCase()] || type
   }
 
@@ -857,11 +905,11 @@
     }
   }
 
+  .col-expand { width: 44px; text-align: center; }
   .col-type { width: 80px; }
   .col-body { }
   .col-start { width: 110px; white-space: nowrap; }
   .col-days { width: 90px; text-align: center; }
-  .col-spend { width: 130px; }
   .col-status { width: 80px; }
 
   .media-badge {
@@ -939,5 +987,53 @@
       background-color: var(--color-gray-100);
       color: var(--color-gray-600);
     }
+  }
+
+  .expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 5px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-bg-primary);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-primary-600);
+    cursor: pointer;
+    line-height: 1;
+
+    &:hover {
+      background-color: var(--color-primary-50);
+    }
+  }
+
+  .variant-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+
+  .variant-row {
+    background-color: var(--color-gray-50);
+
+    &:hover {
+      background-color: var(--color-primary-50);
+    }
+  }
+
+  .variant-indent {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .variant-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
   }
 </style>

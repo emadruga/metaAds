@@ -16,6 +16,7 @@ Environment variables:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -141,6 +142,68 @@ def _get_page_profile(page_id: str) -> dict:
     return {}
 
 
+def _normalize_media_type(raw: str | None) -> str:
+    """Map Meta API media_type values to a consistent frontend enum."""
+    if not raw:
+        return "OTHER"
+    t = raw.upper()
+    if t == "PHOTO":
+        return "IMAGE"
+    if t in ("CAROUSEL_CONTAINER", "CAROUSEL_AD"):
+        return "CAROUSEL"
+    if t in ("VIDEO", "IMAGE", "CAROUSEL", "OTHER"):
+        return t
+    return "OTHER"
+
+
+def _variant_key(page_name: str, headline: str) -> str:
+    """Stable 12-char hash of page_name|headline (lowercase)."""
+    raw = f"{(page_name or '').strip().lower()}|{(headline or '').strip().lower()}"
+    return hashlib.md5(raw.encode()).hexdigest()[:12]
+
+
+def _group_by_variant(ads: List[dict]) -> List[dict]:
+    """
+    Group pre-sorted ads by (page_name, headline).
+    Each group keeps the max days_active and is_active=True if any variant is active.
+    The group's representative fields (body, start_date, etc.) come from the
+    first (longest-running) variant since ads are pre-sorted by days_active desc.
+    """
+    groups: dict[str, dict] = {}
+    order: List[str] = []
+
+    for ad in ads:
+        key = _variant_key(ad.get("page_name", ""), ad.get("headline", ""))
+        if key not in groups:
+            groups[key] = {
+                "variant_key": key,
+                "page_name": ad.get("page_name", ""),
+                "headline": ad.get("headline", ""),
+                "body": ad.get("body", ""),
+                "description": ad.get("description", ""),
+                "link_caption": ad.get("link_caption", ""),
+                "media_type": ad.get("media_type"),
+                "start_date": ad.get("start_date"),
+                "days_active": ad.get("days_active") or 0,
+                "is_active": ad.get("is_active", False),
+                "snapshot_url": ad.get("snapshot_url"),
+                "platforms": ad.get("platforms", []),
+                "count": 0,
+                "ads": [],
+            }
+            order.append(key)
+
+        g = groups[key]
+        g["ads"].append(ad)
+        g["count"] += 1
+        if (ad.get("days_active") or 0) > g["days_active"]:
+            g["days_active"] = ad["days_active"]
+        if ad.get("is_active"):
+            g["is_active"] = True
+
+    return [groups[k] for k in order]
+
+
 def _search_by_page_name(page_name: str, countries: str = "BR") -> List[dict]:
     """
     Search the Ad Library for ads matching page_name.
@@ -240,7 +303,7 @@ def _format_ad(raw: dict) -> dict:
         "days_active": days_active,
         "snapshot_url": raw.get("ad_snapshot_url"),
         "platforms": platforms,
-        "media_type": raw.get("media_type"),
+        "media_type": _normalize_media_type(raw.get("media_type")),
         "spend": {
             "lower_bound": spend_raw.get("lower_bound"),
             "upper_bound": spend_raw.get("upper_bound"),
@@ -515,7 +578,7 @@ def _get_competitor_ads(event: dict) -> dict:
 
     return _response(200, {
         "success": True,
-        "data": ads,
+        "data": _group_by_variant(ads),
         "count": len(ads),
         "page_id": page_id,
         "page_name": competitor.page_name,
