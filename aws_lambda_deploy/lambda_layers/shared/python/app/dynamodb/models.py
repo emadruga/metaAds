@@ -719,6 +719,77 @@ class Competitor:
 
 
 # ---------------------------------------------------------------------------
+# CompetitorScrapeCache
+# ---------------------------------------------------------------------------
+
+@dataclass
+class CompetitorScrapeCache:
+    """
+    Playwright-scraped ad cache for a competitor page.
+
+    Global (not user-scoped) since Meta Ad Library data is public and the
+    same scrape result is valid for all users watching the same page.
+
+    DynamoDB layout:
+        PK  = SCRAPE_CACHE#<page_id>
+        SK  = DATA
+        ttl = Unix timestamp — DynamoDB TTL, set to 4 h from scraped_at
+    """
+    page_id: str
+    ads: List[dict]   # list of frontend-friendly ad dicts
+    ad_count: int
+    scraped_at: str   # ISO8601 UTC
+    ttl: int          # Unix epoch seconds (DynamoDB TTL)
+
+    # ---- DynamoDB key helpers ----
+
+    @staticmethod
+    def pk(page_id: str) -> str:
+        return f"SCRAPE_CACHE#{page_id}"
+
+    @staticmethod
+    def sk() -> str:
+        return "DATA"
+
+    # ---- Serialisation ----
+
+    def to_item(self) -> dict:
+        return {
+            "PK": self.pk(self.page_id),
+            "SK": self.sk(),
+            "entity_type": "SCRAPE_CACHE",
+            "page_id": self.page_id,
+            "ads": json.dumps(self.ads, ensure_ascii=False),
+            "ad_count": self.ad_count,
+            "scraped_at": self.scraped_at,
+            "ttl": self.ttl,
+        }
+
+    @classmethod
+    def from_item(cls, item: dict) -> "CompetitorScrapeCache":
+        ads_raw = item.get("ads", "[]")
+        try:
+            ads = json.loads(ads_raw) if isinstance(ads_raw, str) else ads_raw
+        except (json.JSONDecodeError, TypeError):
+            ads = []
+        return cls(
+            page_id=item["page_id"],
+            ads=ads if isinstance(ads, list) else [],
+            ad_count=int(item.get("ad_count") or 0),
+            scraped_at=item.get("scraped_at", ""),
+            ttl=int(item.get("ttl") or 0),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "page_id": self.page_id,
+            "ads": self.ads,
+            "ad_count": self.ad_count,
+            "scraped_at": self.scraped_at,
+        }
+
+
+# ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
 

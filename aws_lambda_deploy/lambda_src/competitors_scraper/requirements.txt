@@ -1,0 +1,6 @@
+# Playwright (includes async API)
+playwright==1.44.0
+
+# AWS SDK — boto3 is pre-installed in the Lambda runtime but we pin it
+# explicitly so the image always uses a known version
+boto3==1.34.84

@@ -27,7 +27,7 @@ from typing import List
 import boto3
 import requests
 
-from app.dynamodb.competitor_repo import CompetitorRepo
+from app.dynamodb.competitor_repo import CompetitorRepo, ScrapeCacheRepo
 from app.dynamodb.models import Competitor
 from app.utils.ids import now_iso8601
 
@@ -123,6 +123,67 @@ _AD_FIELDS = [
     "spend",
     "impressions",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Playwright scraper integration
+# ---------------------------------------------------------------------------
+
+# Minimum acceptable Graph API result: trigger Playwright fallback if
+# fewer than this many ads returned, or if all of them are inactive.
+_GRAPH_API_THRESHOLD = 5
+
+# ARN of the competitors_scraper Lambda (set by Terraform via env var).
+_SCRAPER_LAMBDA_ARN = os.environ.get("COMPETITORS_SCRAPER_ARN", "")
+
+# Cache age threshold: if cache is older than this we re-trigger a scrape
+# (returning stale data in the meantime).
+_CACHE_MAX_AGE_SECONDS = 4 * 60 * 60  # 4 hours
+
+
+def _is_poor_result(raw_ads: list) -> bool:
+    """Return True when Graph API data is insufficient and Playwright should be used."""
+    if len(raw_ads) < _GRAPH_API_THRESHOLD:
+        return True
+    # All ads are inactive (stop_time set) → page likely has active ads not returned by API
+    if all(a.get("ad_delivery_stop_time") is not None for a in raw_ads):
+        return True
+    return False
+
+
+def _invoke_scraper_async(page_id: str, countries: str) -> None:
+    """
+    Fire-and-forget invocation of the competitors_scraper Lambda.
+    Result is written directly to DynamoDB by the scraper; this Lambda
+    never waits for it (InvocationType=Event).
+    """
+    if not _SCRAPER_LAMBDA_ARN:
+        logger.warning("COMPETITORS_SCRAPER_ARN not set — skipping async scrape")
+        return
+    # Pick the first country (usually "US") as the scrape target
+    country = (countries or "US").split(",")[0].strip().upper() or "US"
+    payload = json.dumps({"page_id": page_id, "country": country})
+    try:
+        client = boto3.client("lambda", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+        client.invoke(
+            FunctionName=_SCRAPER_LAMBDA_ARN,
+            InvocationType="Event",   # async — returns 202 immediately
+            Payload=payload,
+        )
+        logger.info(f"Scraper Lambda invoked async: page_id={page_id} country={country}")
+    except Exception as exc:
+        logger.warning(f"Failed to invoke scraper Lambda for page_id={page_id}: {exc}")
+
+
+def _format_scraped_ads(cached_ads: list, page_name: str) -> list:
+    """
+    Backfill page_name into ads returned from the Playwright cache
+    (the scraper stores page_name='' to avoid stale names).
+    """
+    for ad in cached_ads:
+        if not ad.get("page_name"):
+            ad["page_name"] = page_name
+    return cached_ads
 
 
 def _get_page_profile(page_id: str) -> dict:
@@ -572,11 +633,20 @@ def _remove_competitor(event: dict) -> dict:
 
 def _get_competitor_ads(event: dict) -> dict:
     """
-    Fetch active ads for a competitor from the Meta Ad Library (live).
+    Fetch ads for a competitor. Two-tier strategy:
+
+    1. Try Meta Graph API (fast, structured, but limited for US/EU brands).
+    2. If Graph API returns fewer than _GRAPH_API_THRESHOLD results OR all
+       ads are inactive:
+         a. Return Playwright cache if fresh (≤ 4 h old).
+         b. Invoke scraper Lambda async (fire-and-forget) to refresh / populate cache.
+         c. Return stale cache or poor Graph API results in the meantime,
+            flagged with scraping_in_progress=True so the frontend can poll.
+
     Query params:
         limit    — max ads to return (default 100, max 200)
-        status   — ACTIVE | INACTIVE | ALL (default ACTIVE)
-        countries — comma-separated ISO codes (default US,BR)
+        status   — ACTIVE | INACTIVE | ALL (default ALL)
+        countries — comma-separated ISO codes (default from stored competitor)
     """
     user_id = _get_user_id(event)
     page_id = _path_params(event).get("page_id", "")
@@ -587,11 +657,15 @@ def _get_competitor_ads(event: dict) -> dict:
         return _response(404, {"success": False, "error": "Competitor not found"})
 
     limit = min(int(params.get("limit", 100)), 200)
-    # Default to ALL so we surface both active and historical ads (like the ANDROMEDA doc recommends)
     ad_active_status = params.get("status", "ALL").upper()
-    countries_raw = params.get("countries") or competitor.countries or "BR"
+    countries_raw = params.get("countries") or competitor.countries or "US,BR"
     countries = [c.strip() for c in countries_raw.split(",") if c.strip()]
 
+    # ------------------------------------------------------------------
+    # Step 1: Graph API
+    # ------------------------------------------------------------------
+    raw_ads: list = []
+    graph_api_error: str | None = None
     try:
         raw_ads = _fetch_ads_for_page(page_id, countries, ad_active_status, limit)
 
@@ -607,24 +681,86 @@ def _get_competitor_ads(event: dict) -> dict:
         # Final fallback: broad markets + ALL statuses
         if not raw_ads and ad_active_status != "ALL":
             broad = list(dict.fromkeys(countries + _MAJOR_MARKETS))
-            logger.info(f"Still 0 ads, retrying with ALL statuses + broad markets")
+            logger.info("Still 0 ads — retrying with ALL statuses + broad markets")
             raw_ads = _fetch_ads_for_page(page_id, broad, "ALL", limit)
 
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 0
         logger.error(f"Meta API HTTP {status} fetching ads for page {page_id}: {exc}")
-        body = {}
         try:
             body = exc.response.json()
+            graph_api_error = body.get("error", {}).get("message", f"Meta API error {status}")
         except Exception:
-            pass
-        err_msg = body.get("error", {}).get("message", f"Meta API error {status}")
-        return _response(502, {"success": False, "error": err_msg})
+            graph_api_error = f"Meta API error {status}"
     except Exception as exc:
         logger.error(f"Error fetching ads for page {page_id}: {exc}", exc_info=True)
-        return _response(502, {"success": False, "error": str(exc)})
+        graph_api_error = str(exc)
 
-    ads = [_format_ad(a) for a in raw_ads]
+    # ------------------------------------------------------------------
+    # Step 2: Evaluate Graph API quality; check Playwright cache
+    # ------------------------------------------------------------------
+    poor_result = _is_poor_result(raw_ads)
+    scraping_in_progress = False
+    data_source = "graph_api"
+
+    if poor_result or graph_api_error:
+        logger.info(
+            f"Graph API result is poor for page_id={page_id} "
+            f"(count={len(raw_ads)}, error={graph_api_error}) — checking Playwright cache"
+        )
+        try:
+            cache = ScrapeCacheRepo.get(page_id)
+        except Exception as exc:
+            logger.warning(f"Could not read scrape cache: {exc}")
+            cache = None
+
+        if cache and cache.scraped_at:
+            # Check freshness
+            try:
+                import time as _time
+                scraped_ts = datetime.fromisoformat(
+                    cache.scraped_at.replace("Z", "+00:00")
+                ).timestamp()
+                age_seconds = _time.time() - scraped_ts
+            except Exception:
+                age_seconds = 0
+
+            if age_seconds < _CACHE_MAX_AGE_SECONDS:
+                # Fresh cache — return immediately
+                logger.info(
+                    f"Returning fresh Playwright cache: page_id={page_id} "
+                    f"ad_count={cache.ad_count} age={age_seconds/60:.0f}min"
+                )
+                ads = _format_scraped_ads(list(cache.ads), competitor.page_name)
+                data_source = "playwright_cache"
+            else:
+                # Stale cache — serve stale, kick off background refresh
+                logger.info(
+                    f"Playwright cache is stale ({age_seconds/3600:.1f}h old) "
+                    f"— serving stale data and triggering refresh"
+                )
+                ads = _format_scraped_ads(list(cache.ads), competitor.page_name)
+                data_source = "playwright_cache_stale"
+                scraping_in_progress = True
+                _invoke_scraper_async(page_id, competitor.countries)
+        else:
+            # No cache — kick off background scrape, return what we have from Graph API
+            logger.info(
+                f"No Playwright cache for page_id={page_id} — triggering async scrape"
+            )
+            scraping_in_progress = True
+            _invoke_scraper_async(page_id, competitor.countries)
+
+            if graph_api_error and not raw_ads:
+                # Graph API also failed entirely — return a clear error
+                return _response(502, {"success": False, "error": graph_api_error})
+
+            ads = [_format_ad(a) for a in raw_ads]
+
+    else:
+        # Good Graph API result — use it directly
+        ads = [_format_ad(a) for a in raw_ads]
+
     # Sort by days_active descending so longest-running ads appear first
     ads.sort(key=lambda a: a.get("days_active") or 0, reverse=True)
 
@@ -718,6 +854,8 @@ def _get_competitor_ads(event: dict) -> dict:
         "page_id": page_id,
         "page_name": competitor.page_name,
         "aggregates": aggregates,
+        "data_source": data_source,
+        "scraping_in_progress": scraping_in_progress,
     })
 
 

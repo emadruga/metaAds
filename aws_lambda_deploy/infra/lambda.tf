@@ -348,13 +348,15 @@ resource "aws_lambda_function" "competitors" {
 
   environment {
     variables = merge(local.common_env, {
-      META_API_SECRETS_NAME = aws_secretsmanager_secret.meta_api.name
+      META_API_SECRETS_NAME    = aws_secretsmanager_secret.meta_api.name
+      COMPETITORS_SCRAPER_ARN  = aws_lambda_function.competitors_scraper.arn
     })
   }
 
   depends_on = [
     aws_cloudwatch_log_group.lambda_competitors,
-    aws_iam_role_policy_attachment.lambda_api_logs
+    aws_iam_role_policy_attachment.lambda_api_logs,
+    aws_lambda_function.competitors_scraper,
   ]
 
   tags = {

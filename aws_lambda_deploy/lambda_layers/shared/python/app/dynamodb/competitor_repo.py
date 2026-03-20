@@ -15,7 +15,7 @@ from typing import List, Optional
 from boto3.dynamodb.conditions import Key
 
 from app.dynamodb.client import get_table
-from app.dynamodb.models import Competitor
+from app.dynamodb.models import Competitor, CompetitorScrapeCache
 from app.utils.ids import now_iso8601
 
 
@@ -107,3 +107,43 @@ class CompetitorRepo:
             }
         )
         return True
+
+
+class ScrapeCacheRepo:
+    """
+    Read/write Playwright scrape cache records.
+
+    Cache items are global (not user-scoped): the same page_id always maps
+    to the same public Ad Library data regardless of which user requested it.
+    DynamoDB TTL on `ttl` attribute expires items automatically after 4 hours.
+    """
+
+    @staticmethod
+    def get(page_id: str) -> Optional[CompetitorScrapeCache]:
+        """Return the cached scrape result for page_id, or None if missing/expired."""
+        table = get_table()
+        resp = table.get_item(
+            Key={
+                "PK": CompetitorScrapeCache.pk(page_id),
+                "SK": CompetitorScrapeCache.sk(),
+            }
+        )
+        item = resp.get("Item")
+        return CompetitorScrapeCache.from_item(item) if item else None
+
+    @staticmethod
+    def put(cache: CompetitorScrapeCache) -> None:
+        """Write (or overwrite) a scrape cache record."""
+        table = get_table()
+        table.put_item(Item=cache.to_item())
+
+    @staticmethod
+    def delete(page_id: str) -> None:
+        """Remove a scrape cache record (e.g. on competitor deletion)."""
+        table = get_table()
+        table.delete_item(
+            Key={
+                "PK": CompetitorScrapeCache.pk(page_id),
+                "SK": CompetitorScrapeCache.sk(),
+            }
+        )
