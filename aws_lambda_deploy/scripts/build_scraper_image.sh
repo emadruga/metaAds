@@ -82,19 +82,20 @@ echo "  Repository: ${REGISTRY}/${REPO_NAME}"
 # --------------------------------------------------------------------------
 echo ""
 echo "[3/4] Building image (platform: linux/amd64)..."
-docker build \
+docker buildx build \
   --platform linux/amd64 \
+  --provenance=false \
   --tag "${IMAGE_URI}" \
+  --push \
   "${CONTEXT_DIR}"
 
-echo "  Built: ${IMAGE_URI}"
+echo "  Built and pushed: ${IMAGE_URI}"
 
 # --------------------------------------------------------------------------
-# 4. Push to ECR
+# (push happens inside buildx --push above)
 # --------------------------------------------------------------------------
 echo ""
-echo "[4/4] Pushing image to ECR..."
-docker push "${IMAGE_URI}"
+echo "[4/4] Image already pushed via buildx --push"
 
 echo ""
 echo "========================================"

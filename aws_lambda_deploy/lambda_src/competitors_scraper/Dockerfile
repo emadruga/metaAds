@@ -47,8 +47,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # PLAYWRIGHT_BROWSERS_PATH must be writable at runtime; /opt is safe in Lambda.
 # --------------------------------------------------------------------------
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
-RUN playwright install chromium \
-    && playwright install-deps chromium
+RUN playwright install chromium
 
 # --------------------------------------------------------------------------
 # Handler
