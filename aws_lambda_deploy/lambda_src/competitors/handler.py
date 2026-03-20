@@ -228,7 +228,9 @@ def _search_by_page_name(page_name: str, hint_country: str = "") -> List[dict]:
     Uses ad_active_status=ALL so paused / historical ads are also matched —
     we only need one ad to extract page_id, so restricting to ACTIVE is too narrow.
 
-    Returns raw API ad objects from the first non-empty result set.
+    Returns (ads, resolved_countries) where resolved_countries is the
+    country string that produced a hit — useful for storing on the Competitor
+    so subsequent ad fetches target the right market.
     """
     token = _get_meta_token()
 
@@ -258,9 +260,9 @@ def _search_by_page_name(page_name: str, hint_country: str = "") -> List[dict]:
                 f"_search_by_page_name: found {len(results)} ads for "
                 f"'{page_name}' with countries={country_str}"
             )
-            return results
+            return results, country_str
 
-    return []
+    return [], ""
 
 
 def _fetch_ads_for_page(
@@ -390,7 +392,7 @@ def _resolve_competitor(event: dict) -> dict:
         return _response(400, {"success": False, "error": "page_name is required"})
 
     try:
-        ads = _search_by_page_name(page_name, hint_country=hint_country)
+        ads, resolved_countries = _search_by_page_name(page_name, hint_country=hint_country)
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else 0
         if status == 400:
@@ -437,9 +439,13 @@ def _resolve_competitor(event: dict) -> dict:
 
     logger.info(
         f"resolve '{page_name}' → {len(candidates)} candidates: "
-        f"{[c['page_id'] for c in candidates]}"
+        f"{[c['page_id'] for c in candidates]} (resolved via countries={resolved_countries})"
     )
-    return _response(200, {"success": True, "candidates": candidates})
+    return _response(200, {
+        "success": True,
+        "candidates": candidates,
+        "resolved_countries": resolved_countries,
+    })
 
 
 def _list_competitors(event: dict) -> dict:
@@ -470,7 +476,7 @@ def _add_competitor(event: dict) -> dict:
         try:
             # Pass the first country in the list as a hint (user-selected market).
             hint = countries.split(",")[0].strip()
-            ads = _search_by_page_name(page_name, hint_country=hint)
+            ads, resolved_countries = _search_by_page_name(page_name, hint_country=hint)
             # Prefer exact case-insensitive match on page_name
             matched = [a for a in ads if a.get("page_name", "").lower() == page_name.lower()]
             if not matched:
@@ -478,6 +484,8 @@ def _add_competitor(event: dict) -> dict:
             if matched:
                 page_id = matched[0].get("page_id", "")
                 page_name = matched[0].get("page_name", page_name)  # use canonical casing
+                if resolved_countries:
+                    countries = resolved_countries  # use the market that actually found the page
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else 0
             if status == 400:

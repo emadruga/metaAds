@@ -182,7 +182,8 @@
   const pageNameInput = ref(null)
 
   // Confirmation modal state
-  const confirmCandidates = ref([])   // list returned by /resolve
+  const confirmCandidates = ref([])      // list returned by /resolve
+  const confirmResolvedCountries = ref('') // country string that found the candidates
   const showConfirmModal = ref(false)
 
   const filteredCompetitors = computed(() => {
@@ -209,11 +210,12 @@
     // Step 1: resolve — find candidates without saving
     resolving.value = true
     try {
-      const candidates = await store.resolveCompetitor({
+      const { candidates, resolved_countries } = await store.resolveCompetitor({
         page_name: name,
         countries: newCountries.value,
       })
       confirmCandidates.value = candidates
+      confirmResolvedCountries.value = resolved_countries || newCountries.value
       showConfirmModal.value = true
     } catch (e) {
       addError.value = e.response?.data?.error || e.message || 'Could not find this advertiser'
@@ -223,11 +225,13 @@
   }
 
   async function handleConfirm(candidate) {
-    // Step 2: user confirmed a candidate — now save
+    // Step 2: user confirmed a candidate — save with the countries that
+    // actually found the page (not the dropdown hint) so ad fetches
+    // target the right market from the start.
     await _saveCompetitor({
       page_name: candidate.page_name,
       page_id:   candidate.page_id,
-      countries: newCountries.value,
+      countries: confirmResolvedCountries.value || newCountries.value,
     })
   }
 
@@ -250,6 +254,7 @@
     showAddForm.value = false
     showConfirmModal.value = false
     confirmCandidates.value = []
+    confirmResolvedCountries.value = ''
     newPageName.value = ''
     newPageId.value = ''
     newCountries.value = 'BR'

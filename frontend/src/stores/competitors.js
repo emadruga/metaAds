@@ -33,7 +33,10 @@ export const useCompetitorsStore = defineStore('competitors', {
 
     async resolveCompetitor(pageData) {
       const response = await competitorApi.resolve(pageData)
-      return response.data.candidates || []
+      return {
+        candidates:         response.data.candidates || [],
+        resolved_countries: response.data.resolved_countries || '',
+      }
     },
 
     async addCompetitor(pageData) {
