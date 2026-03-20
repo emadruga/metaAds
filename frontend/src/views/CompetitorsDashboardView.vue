@@ -71,9 +71,9 @@
           </div>
           <div v-if="addError" class="form-error">{{ addError }}</div>
           <div class="form-actions">
-            <button class="btn btn-ghost" @click="cancelAdd" :disabled="adding">Cancel</button>
-            <button class="btn btn-primary" @click="handleAdd" :disabled="adding || !newPageName.trim()">
-              {{ adding ? 'Adding...' : 'Add' }}
+            <button class="btn btn-ghost" @click="cancelAdd" :disabled="resolving || adding">Cancel</button>
+            <button class="btn btn-primary" @click="handleAdd" :disabled="resolving || adding || !newPageName.trim()">
+              {{ resolving ? 'Searching...' : adding ? 'Adding...' : 'Search' }}
             </button>
           </div>
         </div>
@@ -126,6 +126,15 @@
       </div>
     </main>
 
+    <!-- Confirm competitor modal -->
+    <ConfirmCompetitorModal
+      v-if="showConfirmModal && confirmCandidates.length"
+      :candidates="confirmCandidates"
+      :adding="adding"
+      @confirm="handleConfirm"
+      @cancel="showConfirmModal = false"
+    />
+
     <!-- Remove confirm modal -->
     <div v-if="confirmRemove" class="modal-overlay" @click.self="confirmRemove = null">
       <div class="modal-dialog">
@@ -149,6 +158,7 @@
   import { useCompetitorsStore } from '@/stores/competitors'
   import { devMode } from '@/services/api'
   import CompetitorCard from '@/components/CompetitorCard.vue'
+  import ConfirmCompetitorModal from '@/components/ConfirmCompetitorModal.vue'
 
   const router = useRouter()
   const store = useCompetitorsStore()
@@ -164,11 +174,16 @@
   const newPageName = ref('')
   const newPageId = ref('')
   const newCountries = ref('BR')
-  const adding = ref(false)
+  const resolving = ref(false)   // searching Meta API for candidates
+  const adding = ref(false)      // saving the confirmed competitor
   const addError = ref('')
   const searchQuery = ref('')
   const confirmRemove = ref(null)
   const pageNameInput = ref(null)
+
+  // Confirmation modal state
+  const confirmCandidates = ref([])   // list returned by /resolve
+  const showConfirmModal = ref(false)
 
   const filteredCompetitors = computed(() => {
     if (!searchQuery.value.trim()) return store.competitors
@@ -183,18 +198,49 @@
     const name = newPageName.value.trim()
     if (!name) return
 
-    adding.value = true
     addError.value = ''
 
+    // If the user typed a page_id directly, skip resolution and go straight to save
+    if (newPageId.value.trim()) {
+      await _saveCompetitor({ page_name: name, page_id: newPageId.value.trim(), countries: newCountries.value })
+      return
+    }
+
+    // Step 1: resolve — find candidates without saving
+    resolving.value = true
     try {
-      await store.addCompetitor({
+      const candidates = await store.resolveCompetitor({
         page_name: name,
-        page_id: newPageId.value.trim() || undefined,
         countries: newCountries.value,
       })
+      confirmCandidates.value = candidates
+      showConfirmModal.value = true
+    } catch (e) {
+      addError.value = e.response?.data?.error || e.message || 'Could not find this advertiser'
+    } finally {
+      resolving.value = false
+    }
+  }
+
+  async function handleConfirm(candidate) {
+    // Step 2: user confirmed a candidate — now save
+    await _saveCompetitor({
+      page_name: candidate.page_name,
+      page_id:   candidate.page_id,
+      countries: newCountries.value,
+    })
+  }
+
+  async function _saveCompetitor(pageData) {
+    adding.value = true
+    addError.value = ''
+    try {
+      await store.addCompetitor(pageData)
+      showConfirmModal.value = false
       cancelAdd()
     } catch (e) {
       addError.value = e.response?.data?.error || e.message || 'Failed to add competitor'
+      showConfirmModal.value = false
     } finally {
       adding.value = false
     }
@@ -202,6 +248,8 @@
 
   function cancelAdd() {
     showAddForm.value = false
+    showConfirmModal.value = false
+    confirmCandidates.value = []
     newPageName.value = ''
     newPageId.value = ''
     newCountries.value = 'BR'

@@ -134,6 +134,7 @@ export const collectApi = {
 }
 
 export const competitorApi = {
+  resolve: (data) => api.post('/competitors/resolve', data),
   list: () => api.get('/competitors'),
   add: (data) => api.post('/competitors', data),
   update: (pageId, data) => api.patch(`/competitors/${pageId}`, data),

@@ -452,6 +452,14 @@ resource "aws_lambda_permission" "competitors" {
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*"
 }
 
+resource "aws_apigatewayv2_route" "competitors_resolve" {
+  api_id             = aws_apigatewayv2_api.main.id
+  route_key          = "POST /api/competitors/resolve"
+  target             = "integrations/${aws_apigatewayv2_integration.competitors.id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt.id
+}
+
 resource "aws_apigatewayv2_route" "competitors_list" {
   api_id             = aws_apigatewayv2_api.main.id
   route_key          = "GET /api/competitors"

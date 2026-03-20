@@ -2,6 +2,7 @@
 Competitors Lambda handler — CRUD for tracked competitor advertiser pages.
 
 Routes (HTTP API v2 payload format 2.0):
+    POST   /api/competitors/resolve        resolve_competitor  (search, no save)
     GET    /api/competitors                list_competitors
     POST   /api/competitors                add_competitor
     PATCH  /api/competitors/{page_id}      update_competitor
@@ -99,6 +100,10 @@ _META_BASE = "https://graph.facebook.com/v24.0"
 # Broadened country list used as fallback when stored country yields 0 ads.
 # Covers the main markets where Brazilian / Lusophone advertisers tend to run.
 _MAJOR_MARKETS = ["BR", "PT", "MX", "AR", "US", "ES", "CO", "CL", "PE", "CA", "FR", "DE", "GB", "AU", "JP"]
+
+# Country list used for competitor discovery (page_id resolution).
+# Ordered to maximise hit rate: English-speaking markets first, then PT/ES/global.
+_DISCOVERY_MARKETS = ["US", "GB", "AU", "CA", "BR", "PT", "MX", "DE", "FR", "IT", "ES", "JP", "AR", "CO", "CL"]
 
 _AD_FIELDS = [
     "id",
@@ -212,23 +217,50 @@ def _group_by_variant(ads: List[dict]) -> List[dict]:
     return [groups[k] for k in order]
 
 
-def _search_by_page_name(page_name: str, countries: str = "BR") -> List[dict]:
+def _search_by_page_name(page_name: str, hint_country: str = "") -> List[dict]:
     """
     Search the Ad Library for ads matching page_name.
-    Returns raw API ad objects. Used to discover a page's page_id.
+
+    Cascades across country lists to maximise discovery:
+      1. User-hinted country (if provided and not empty)
+      2. Broad _DISCOVERY_MARKETS list (comma-joined, single API call)
+
+    Uses ad_active_status=ALL so paused / historical ads are also matched —
+    we only need one ad to extract page_id, so restricting to ACTIVE is too narrow.
+
+    Returns raw API ad objects from the first non-empty result set.
     """
     token = _get_meta_token()
-    params = {
-        "access_token": token,
-        "search_terms": page_name,
-        "ad_reached_countries": countries,
-        "ad_active_status": "ACTIVE",
-        "fields": ",".join(_AD_FIELDS),
-        "limit": 25,
-    }
-    resp = requests.get(f"{_META_BASE}/ads_archive", params=params, timeout=20)
-    resp.raise_for_status()
-    return resp.json().get("data", [])
+
+    # Build ordered list of country strings to attempt
+    country_passes: List[str] = []
+    hint = (hint_country or "").strip().upper()
+    if hint:
+        country_passes.append(hint)
+    broad = ",".join(_DISCOVERY_MARKETS)
+    if broad not in country_passes:
+        country_passes.append(broad)
+
+    for country_str in country_passes:
+        params = {
+            "access_token": token,
+            "search_terms": page_name,
+            "ad_reached_countries": country_str,
+            "ad_active_status": "ALL",
+            "fields": ",".join(_AD_FIELDS),
+            "limit": 25,
+        }
+        resp = requests.get(f"{_META_BASE}/ads_archive", params=params, timeout=20)
+        resp.raise_for_status()
+        results = resp.json().get("data", [])
+        if results:
+            logger.info(
+                f"_search_by_page_name: found {len(results)} ads for "
+                f"'{page_name}' with countries={country_str}"
+            )
+            return results
+
+    return []
 
 
 def _fetch_ads_for_page(
@@ -330,6 +362,86 @@ def _format_ad(raw: dict) -> dict:
 # Route handlers
 # ---------------------------------------------------------------------------
 
+def _resolve_competitor(event: dict) -> dict:
+    """
+    POST /api/competitors/resolve
+
+    Searches Meta Ad Library for the given page_name and returns up to 5
+    distinct candidate pages with basic profile metadata.
+    Does NOT save anything — purely a preview/confirmation step used by the
+    frontend before calling POST /api/competitors to actually save.
+
+    Request body:
+        { "page_name": "Marcella NYC", "countries": "US" }   # countries optional hint
+
+    Response:
+        { "success": true, "candidates": [
+            { "page_id": "...", "page_name": "...", "fan_count": 88500,
+              "category": "Clothing (Brand)", "about": "..." },
+            ...
+          ]
+        }
+    """
+    data = _body(event)
+    page_name = (data.get("page_name") or "").strip()
+    hint_country = (data.get("countries") or "").strip()
+
+    if not page_name:
+        return _response(400, {"success": False, "error": "page_name is required"})
+
+    try:
+        ads = _search_by_page_name(page_name, hint_country=hint_country)
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else 0
+        if status == 400:
+            return _response(422, {
+                "success": False,
+                "error": "Meta API rejected the search. Check that your access token is valid.",
+            })
+        logger.warning(f"Meta API error during resolve: {exc}")
+        return _response(502, {"success": False, "error": "Meta API error during search."})
+    except Exception as exc:
+        logger.warning(f"resolve search failed: {exc}")
+        return _response(502, {"success": False, "error": "Search failed. Please try again."})
+
+    if not ads:
+        return _response(404, {
+            "success": False,
+            "error": (
+                f"No pages found matching '{page_name}'. "
+                "Try the exact advertiser name shown in Meta Ad Library, "
+                "or provide the page_id directly."
+            ),
+        })
+
+    # Deduplicate by page_id, keep up to 5 candidates
+    seen_pids: set = set()
+    candidates: List[dict] = []
+    for ad in ads:
+        pid   = ad.get("page_id", "")
+        pname = ad.get("page_name", "")
+        if pid and pid not in seen_pids:
+            seen_pids.add(pid)
+            candidates.append({"page_id": pid, "page_name": pname})
+        if len(candidates) >= 5:
+            break
+
+    # Enrich only the top candidate with profile metadata (best-effort, 1 extra call)
+    if candidates:
+        profile = _get_page_profile(candidates[0]["page_id"])
+        candidates[0].update({
+            "fan_count": profile.get("fan_count"),
+            "category":  profile.get("category", ""),
+            "about":     profile.get("about", ""),
+        })
+
+    logger.info(
+        f"resolve '{page_name}' → {len(candidates)} candidates: "
+        f"{[c['page_id'] for c in candidates]}"
+    )
+    return _response(200, {"success": True, "candidates": candidates})
+
+
 def _list_competitors(event: dict) -> dict:
     user_id = _get_user_id(event)
     competitors = CompetitorRepo.list_for_user(user_id)
@@ -346,7 +458,9 @@ def _add_competitor(event: dict) -> dict:
 
     page_name = (data.get("page_name") or "").strip()
     page_id = (data.get("page_id") or "").strip()
-    countries = (data.get("countries") or "BR").strip() or "BR"
+    # countries stores which market to use for ongoing ad collection.
+    # Default to "US,BR" so the cascade in _fetch_ads_for_page covers both.
+    countries = (data.get("countries") or "US,BR").strip()
 
     if not page_name:
         return _response(400, {"success": False, "error": "page_name is required"})
@@ -354,7 +468,9 @@ def _add_competitor(event: dict) -> dict:
     # If page_id not provided, search Meta API to resolve it
     if not page_id:
         try:
-            ads = _search_by_page_name(page_name, countries=countries)
+            # Pass the first country in the list as a hint (user-selected market).
+            hint = countries.split(",")[0].strip()
+            ads = _search_by_page_name(page_name, hint_country=hint)
             # Prefer exact case-insensitive match on page_name
             matched = [a for a in ads if a.get("page_name", "").lower() == page_name.lower()]
             if not matched:
@@ -602,6 +718,7 @@ def _get_competitor_ads(event: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 _ROUTES: dict[tuple[str, str], callable] = {
+    ("POST",   "/api/competitors/resolve"):       _resolve_competitor,
     ("GET",    "/api/competitors"):               _list_competitors,
     ("POST",   "/api/competitors"):               _add_competitor,
     ("PATCH",  "/api/competitors/{page_id}"):     _update_competitor,
