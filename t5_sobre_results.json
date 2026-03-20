@@ -1,0 +1,68 @@
+{
+  "started_at": "2026-03-20T00:42:00.677473Z",
+  "headless": false,
+  "advertisers": {
+    "marcellanyc": {
+      "label": "Marcella NYC",
+      "steps": {
+        "A_navigate": {
+          "status": "PASS",
+          "detail": "page loaded: https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=US&v"
+        },
+        "B_no_login_wall": {
+          "status": "PASS",
+          "detail": "no login wall or CAPTCHA detected"
+        },
+        "C_results_loaded": {
+          "status": "PASS",
+          "detail": "content detected via: .x1n2onr6"
+        },
+        "D_sobre_tab_clicked": {
+          "status": "PASS",
+          "detail": "tab found and clicked"
+        },
+        "G_page_id": {
+          "status": "PASS",
+          "detail": "page_id matches expected: 195588473845643"
+        },
+        "G_fb_followers": {
+          "status": "PASS",
+          "detail": "value: 88,5"
+        },
+        "G_ig_handle": {
+          "status": "PASS",
+          "detail": "value: marcellanyc"
+        },
+        "G_ig_followers": {
+          "status": "PASS",
+          "detail": "value: 214,9"
+        },
+        "G_created": {
+          "status": "PASS",
+          "detail": "value: 24 de set de 2011"
+        }
+      },
+      "extracted": {
+        "page_id": "195588473845643",
+        "fb_followers": "88,5",
+        "ig_handle": "marcellanyc",
+        "ig_followers": "214,9",
+        "created": "24 de set de 2011"
+      },
+      "pass": [
+        "A_navigate",
+        "B_no_login_wall",
+        "C_results_loaded",
+        "D_sobre_tab_clicked",
+        "G_page_id",
+        "G_fb_followers",
+        "G_ig_handle",
+        "G_ig_followers",
+        "G_created"
+      ],
+      "fail": [],
+      "warn": []
+    }
+  },
+  "completed_at": "2026-03-20T00:42:45.669677Z"
+}
