@@ -65,13 +65,13 @@
       <div class="modal-footer">
         <button class="btn btn-ghost" @click="$emit('close')">Close</button>
         <a
-          v-if="ad.snapshot_url"
-          :href="ad.snapshot_url"
+          v-if="metaAdLibraryUrl"
+          :href="metaAdLibraryUrl"
           target="_blank"
           rel="noopener noreferrer"
           class="btn btn-primary"
         >
-          🔍 View on Meta Ad Library
+          View on Meta Ad Library
         </a>
       </div>
     </div>
@@ -79,7 +79,9 @@
 </template>
 
 <script setup>
-  defineProps({
+  import { computed } from 'vue'
+
+  const props = defineProps({
     ad: {
       type: Object,
       required: true,
@@ -87,6 +89,13 @@
   })
 
   defineEmits(['close'])
+
+  // Works for both Graph API ads (snapshot_url set) and Playwright ads (meta_ad_id only)
+  const metaAdLibraryUrl = computed(() => {
+    if (props.ad.snapshot_url) return props.ad.snapshot_url
+    if (props.ad.meta_ad_id) return `https://www.facebook.com/ads/library/?id=${props.ad.meta_ad_id}`
+    return null
+  })
 
   function formatDate(dateStr) {
     if (!dateStr) return '—'

@@ -222,18 +222,30 @@ def _normalize_media_type(raw: str | None) -> str:
     return "OTHER"
 
 
-def _variant_key(page_name: str, headline: str, is_active: bool) -> str:
-    """Stable 12-char hash of page_name|headline|active (lowercase).
-    Active and inactive ads with the same headline form separate groups."""
+def _variant_key(page_name: str, headline: str, is_active: bool, meta_ad_id: str = "") -> str:
+    """Stable 12-char hash used to group ad variants.
+
+    For Graph API ads (headline present): group by page_name + headline + is_active
+    so different creatives of the same campaign collapse into one row.
+
+    For Playwright-scraped ads (headline is empty): use meta_ad_id as the key
+    so each scraped ad stays as its own distinct row — the scraper already
+    deduplicates by ad_id and has no headline to group on.
+    """
     active_flag = "1" if is_active else "0"
-    raw = f"{(page_name or '').strip().lower()}|{(headline or '').strip().lower()}|{active_flag}"
+    if not (headline or "").strip() and meta_ad_id:
+        # Playwright path: each ad_id is its own variant
+        raw = f"adid|{meta_ad_id.strip()}"
+    else:
+        raw = f"{(page_name or '').strip().lower()}|{(headline or '').strip().lower()}|{active_flag}"
     return hashlib.md5(raw.encode()).hexdigest()[:12]
 
 
 def _group_by_variant(ads: List[dict]) -> List[dict]:
     """
-    Group pre-sorted ads by (page_name, headline, is_active).
-    Active and inactive ads are kept in separate groups.
+    Group pre-sorted ads by variant key.
+    Graph API ads group by (page_name, headline, is_active).
+    Playwright ads (headline='') each get their own group keyed by meta_ad_id.
     The group's start_date is the oldest (minimum) start_date across all variants.
     The group's days_active is the maximum across all variants.
     """
@@ -242,7 +254,12 @@ def _group_by_variant(ads: List[dict]) -> List[dict]:
 
     for ad in ads:
         is_active = ad.get("is_active", False)
-        key = _variant_key(ad.get("page_name", ""), ad.get("headline", ""), is_active)
+        key = _variant_key(
+            ad.get("page_name", ""),
+            ad.get("headline", ""),
+            is_active,
+            ad.get("meta_ad_id", ""),
+        )
         if key not in groups:
             groups[key] = {
                 "variant_key": key,
