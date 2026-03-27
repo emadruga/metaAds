@@ -154,7 +154,7 @@ pages. The page name is visible in the card DOM above "Patrocinado".
 ```python
 G = count of unique page_ids with at least one ad where days_active >= 10
 
-noise_ratio = G / total_unique_page_ids   # 0.0 to 1.0
+SNR = G / total_unique_page_ids   # 0.0 to 1.0 (signal-to-noise ratio)
 
 # Promotion threshold: relative to niche's current best
 promoted = G >= max(3, niche.best_keyword_score * 0.8)
@@ -243,7 +243,7 @@ SK = KEYWORD#<keyword_slug>
 | `test_count` | N | Number of times tested |
 | `best_score` | N | Highest G ever observed |
 | `last_score` | N | Most recent G |
-| `noise_ratio` | N | Most recent G / total_advertisers (Decimal) |
+| `SNR` | N | Most recent G / total_advertisers (Decimal) |
 | `quality_advertisers` | S | JSON list of page_names with G-qualifying ads |
 | `last_tested_at` | S | ISO8601 timestamp |
 | `cooloff_until` | S | ISO8601 timestamp (empty if not cooling) |
@@ -470,7 +470,7 @@ Add a toggle on the niche edit page:
 
 A new tab (or section) showing:
 
-| Keyword | Status | Score (G) | Noise Ratio | Last Tested | Source |
+| Keyword | Status | Score (G) | SNR | Last Tested | Source |
 |---|---|---|---|---|---|
 | women apparel | PROMOTED | 7 | 0.58 | 2h ago | user_seed |
 | women dresses | PROMOTED | 5 | 0.42 | 4h ago | synonym |
@@ -593,7 +593,7 @@ after a 1-2 week trial.
 
 5. Create `keyword_optimizer` Lambda function
 6. Add EventBridge schedule (30 min, FlexibleTimeWindow 5 min)
-7. Implement scoring logic (G metric, noise ratio)
+7. Implement scoring logic (G metric, SNR)
 8. Implement state machine transitions (CANDIDATE → PROMOTED / COOLING_OFF → RETIRED)
 9. Wire into Terraform (new Lambda, EventBridge, IAM)
 
@@ -627,7 +627,7 @@ after a 1-2 week trial.
 
 19. CloudWatch alarms: scraper failure rate, keyword test throughput
 20. Weekly T-6 health check integration
-21. Tune scoring thresholds based on real data (G minimums, noise ratios, cooloff duration)
+21. Tune scoring thresholds based on real data (G minimums, SNR, cooloff duration)
 22. Ad-text keyword extraction (Phase 2 of variation generation)
 
 ---
@@ -641,7 +641,7 @@ After 2 weeks of running on a "Women Fashion in the US" niche seeded with
 - [ ] At least 5 keywords are PROMOTED with G >= 3
 - [ ] Quality advertisers list includes brands with ads running 30+ days
 - [ ] Marcella NYC (or equivalent quality) discovered without manual intervention
-- [ ] Noise ratio of promoted keywords is > 0.30 (30%+ of results are quality)
+- [ ] SNR of promoted keywords is > 0.30 (30%+ of results are quality)
 - [ ] Total cost per niche per month is under $2
 
 If these criteria are not met after 2 weeks, evaluate adding SerpAPI as the
