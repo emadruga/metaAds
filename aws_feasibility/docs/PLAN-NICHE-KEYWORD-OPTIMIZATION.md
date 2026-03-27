@@ -6,6 +6,27 @@
 
 ---
 
+## Table of Contents
+
+- [1. Problem Statement](#1-problem-statement)
+- [2. Proposed Solution](#2-proposed-solution)
+- [3. Architecture](#3-architecture)
+  - [3.1 New EventBridge Schedule: Keyword Optimizer](#31-new-eventbridge-schedule-keyword-optimizer)
+  - [3.2 Playwright Scraper — New keyword_search Mode](#32-playwright-scraper--new-keyword_search-mode)
+  - [3.3 Keyword State Machine](#33-keyword-state-machine)
+  - [3.4 Keyword Variation Generation](#34-keyword-variation-generation)
+- [4. DynamoDB Schema](#4-dynamodb-schema)
+- [5. Lambda Changes](#5-lambda-changes)
+- [6. Frontend Changes](#6-frontend-changes-minimal-phase-1)
+- [7. Cost Estimate](#7-cost-estimate)
+- [8. Risk Mitigation](#8-risk-mitigation)
+- [9. Fallback: SerpAPI / Google Search Integration](#9-fallback-serpapi--google-search-integration)
+- [10. Implementation Phases](#10-implementation-phases)
+- [11. Success Criteria](#11-success-criteria)
+- [12. Files to Create / Modify](#12-files-to-create--modify)
+
+---
+
 ## 1. Problem Statement
 
 The current niche ad collection relies entirely on the Meta Graph API `search_terms`
